@@ -26,6 +26,8 @@ const (
 	indentWidth  = 2
 )
 
+var exitFunc = os.Exit
+
 var (
 	maxDepth     = 15
 	maxItems     = 100
@@ -111,7 +113,7 @@ func DumpHTML(vs ...any) string {
 // Dd is a debug function that prints the values and exits the program.
 func Dd(vs ...any) {
 	Dump(vs...)
-	os.Exit(1)
+	exitFunc(1)
 }
 
 // printDumpHeader prints the header for the dump output, including the file and line number.
