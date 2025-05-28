@@ -352,3 +352,67 @@ func TestUnreadableDefaultBranch(t *testing.T) {
 	// Match stable part of reflect.Value zero output
 	assert.Contains(t, out, "typ_ => *abi.Type(nil)")
 }
+
+func TestNoColorEnvironment(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	if detectColor() {
+		t.Error("Expected color to be disabled when NO_COLOR is set")
+	}
+}
+
+func TestForceColorEnvironment(t *testing.T) {
+	t.Setenv("FORCE_COLOR", "1")
+	if !detectColor() {
+		t.Error("Expected color to be enabled when FORCE_COLOR is set")
+	}
+}
+
+func TestNilChan(t *testing.T) {
+	var ch chan int
+	out := DumpStr(ch)
+	// Strip ANSI codes before checking
+	clean := stripANSI(out)
+	if !strings.Contains(clean, "chan int(nil)") {
+		t.Errorf("Expected nil chan representation, got: %q", clean)
+	}
+}
+
+func TestTruncatedSlice(t *testing.T) {
+	orig := maxItems
+	maxItems = 5
+	defer func() { maxItems = orig }()
+	slice := make([]int, 10)
+	out := DumpStr(slice)
+	if !strings.Contains(out, "... (truncated)") {
+		t.Error("Expected slice to be truncated")
+	}
+}
+
+func TestTruncatedString(t *testing.T) {
+	orig := maxStringLen
+	maxStringLen = 10
+	defer func() { maxStringLen = orig }()
+	s := strings.Repeat("x", 50)
+	out := DumpStr(s)
+	if !strings.Contains(out, "…") {
+		t.Error("Expected long string to be truncated")
+	}
+}
+
+func TestBoolValues(t *testing.T) {
+	out := DumpStr(true, false)
+	if !strings.Contains(out, "true") || !strings.Contains(out, "false") {
+		t.Error("Expected bools to be printed")
+	}
+}
+
+func TestDefaultBranchFallback(t *testing.T) {
+	var v reflect.Value // zero reflect.Value
+	var sb strings.Builder
+	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
+	printValue(tw, v, 0, map[uintptr]bool{})
+	tw.Flush()
+	if !strings.Contains(sb.String(), "<invalid>") {
+		t.Error("Expected default fallback for invalid reflect.Value")
+	}
+}
