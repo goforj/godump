@@ -65,7 +65,7 @@ func TestMaxDepth(t *testing.T) {
 	}
 	n := &Node{}
 	curr := n
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		curr.Child = &Node{}
 		curr = curr.Child
 	}
@@ -234,7 +234,7 @@ func TestPrimitiveTypes(t *testing.T) {
 		uintptr(5),
 		float32(1.5),
 		[2]int{6, 7},
-		interface{}(42),
+		any(42),
 	))
 
 	assert.Contains(t, out, "1")        // int8
@@ -310,7 +310,7 @@ func TestMaxDepthTruncation(t *testing.T) {
 	}
 	root := &Node{}
 	curr := root
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		curr.Next = &Node{}
 		curr = curr.Next
 	}
@@ -332,7 +332,7 @@ func TestDetectColorEnvVars(t *testing.T) {
 
 func TestMapTruncation(t *testing.T) {
 	largeMap := map[int]int{}
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		largeMap[i] = i
 	}
 	out := stripANSI(DumpStr(largeMap))
@@ -340,7 +340,7 @@ func TestMapTruncation(t *testing.T) {
 }
 
 func TestNilInterfaceTypePrint(t *testing.T) {
-	var x interface{} = (*int)(nil)
+	var x any = (*int)(nil)
 	out := stripANSI(DumpStr(x))
 	assert.Contains(t, out, "(nil)")
 }

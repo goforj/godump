@@ -224,7 +224,7 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 
 		fmt.Fprintf(tw, "%s ", colorize(colorGray, "#"+t.String()))
 		fmt.Fprintln(tw)
-		for i := 0; i < v.NumField(); i++ {
+		for i := range v.NumField() {
 			field := t.Field(i)
 			fieldVal := v.Field(i)
 			symbol := "+"
@@ -260,7 +260,7 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 		fmt.Fprint(tw, "}")
 	case reflect.Slice, reflect.Array:
 		fmt.Fprintln(tw, "[")
-		for i := 0; i < v.Len(); i++ {
+		for i := range v.Len() {
 			if i >= maxItems {
 				indentPrint(tw, indent+1, colorize(colorGray, "... (truncated)\n"))
 				break
