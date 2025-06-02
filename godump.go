@@ -369,16 +369,17 @@ func isNil(v reflect.Value) bool {
 	}
 }
 
+var replacer = strings.NewReplacer(
+	"\n", `\n`,
+	"\t", `\t`,
+	"\r", `\r`,
+	"\v", `\v`,
+	"\f", `\f`,
+	"\x1b", `\x1b`,
+)
+
 // escapeControl escapes control characters in a string for safe display.
 func escapeControl(s string) string {
-	replacer := strings.NewReplacer(
-		"\n", `\n`,
-		"\t", `\t`,
-		"\r", `\r`,
-		"\v", `\v`,
-		"\f", `\f`,
-		"\x1b", `\x1b`,
-	)
 	return replacer.Replace(s)
 }
 
