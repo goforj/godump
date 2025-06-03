@@ -33,7 +33,6 @@ linters:
     - testifylint
     - perfsprint
 
-
   settings:
 
     errcheck:
@@ -83,7 +82,7 @@ linters:
           arguments:
             # lower=better
             - 32
-        - name: empty-lines           # +
+        - name: empty-lines
           disabled: true
         - name: function-length
           arguments:
