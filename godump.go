@@ -232,6 +232,15 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 		fmt.Fprintln(tw)
 		visibleFields := reflect.VisibleFields(t)
 		for _, field := range visibleFields {
+			//handle nil pointer
+			if field.Anonymous && v.FieldByIndex(field.Index).Kind() == reflect.Ptr && v.FieldByIndex(field.Index).IsNil() {
+				indentPrint(tw, indent+1, colorize(colorYellow, "+"+field.Name))
+				fmt.Fprint(tw, "	=> ")
+				fmt.Fprint(tw, colorize(colorGray, "<nil embedded>"))
+				fmt.Fprintln(tw)
+				continue
+			}
+
 			fieldVal := v.FieldByIndex(field.Index)
 			symbol := "+"
 			if field.PkgPath != "" {
