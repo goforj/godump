@@ -1,6 +1,7 @@
 package godump
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -515,10 +516,10 @@ func (fd FriendlyDuration) String() string {
 }
 
 func TestTheKitchenSink(t *testing.T) {
-
 	type Inner struct {
 		ID    int
 		Notes []string
+		Blob  []byte
 	}
 
 	type Ref struct {
@@ -551,20 +552,28 @@ func TestTheKitchenSink(t *testing.T) {
 	dur := time.Minute * 20
 
 	val := Everything{
-		String:        "test",
-		Bool:          true,
-		Int:           42,
-		Float:         3.1415,
-		Time:          now,
-		Duration:      dur,
-		Friendly:      FriendlyDuration(dur),
-		PtrString:     &ptrStr,
-		PtrDuration:   &dur,
-		SliceInts:     []int{1, 2, 3},
-		ArrayStrings:  [2]string{"foo", "bar"},
-		MapValues:     map[string]int{"a": 1, "b": 2},
-		Nested:        Inner{ID: 10, Notes: []string{"alpha", "beta"}},
-		NestedPtr:     &Inner{ID: 99, Notes: []string{"x", "y"}},
+		String:       "test",
+		Bool:         true,
+		Int:          42,
+		Float:        3.1415,
+		Time:         now,
+		Duration:     dur,
+		Friendly:     FriendlyDuration(dur),
+		PtrString:    &ptrStr,
+		PtrDuration:  &dur,
+		SliceInts:    []int{1, 2, 3},
+		ArrayStrings: [2]string{"foo", "bar"},
+		MapValues:    map[string]int{"a": 1, "b": 2},
+		Nested: Inner{
+			ID:    10,
+			Notes: []string{"alpha", "beta"},
+			Blob:  []byte(`{"kind":"test","ok":true}`),
+		},
+		NestedPtr: &Inner{
+			ID:    99,
+			Notes: []string{"x", "y"},
+			Blob:  []byte(`{"msg":"hi","status":"cool"}`),
+		},
 		Interface:     map[string]bool{"ok": true},
 		Recursive:     &Ref{},
 		privateField:  "should show",
@@ -773,4 +782,48 @@ func TestFdump_WritesToWriter(t *testing.T) {
 	if !strings.Contains(out, "<#dump //") {
 		t.Errorf("expected dump header with file and line, got: %s", out)
 	}
+}
+
+// TestHexDumpRendering checks that the hex dump output is rendered correctly.
+func TestHexDumpRendering(t *testing.T) {
+	input := []byte(`{"error":"kek","last_error":"not implemented","lol":"ok"}`)
+	output := DumpStr(input)
+	output = stripANSI(output)
+	Dump(input)
+
+	if !strings.Contains(output, "7b 22 65 72 72 6f 72") {
+		t.Error("expected hex dump output missing")
+	}
+	if !strings.Contains(output, "| {") {
+		t.Error("ASCII preview opening missing")
+	}
+	if !strings.Contains(output, `"ok"`) {
+		t.Error("ASCII preview end content missing")
+	}
+	if !strings.Contains(output, "([]uint8) (len=") {
+		t.Error("missing []uint8 preamble")
+	}
+}
+
+func TestDumpRawMessage(t *testing.T) {
+	type Payload struct {
+		Meta json.RawMessage
+	}
+
+	raw := json.RawMessage(`{"key":"value","flag":true}`)
+	p := Payload{Meta: raw}
+
+	Dump(p)
+}
+
+func TestDumpParagraphAsBytes(t *testing.T) {
+	paragraph := `This is a sample paragraph of text.
+It contains multiple lines and some special characters like !@#$%^&*().
+We want to see how it looks when dumped as a byte slice (hex dump).
+New lines are also important to check.`
+
+	// Convert the string to a byte slice
+	paragraphBytes := []byte(paragraph)
+
+	Dump(paragraphBytes)
 }

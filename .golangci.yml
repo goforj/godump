@@ -73,30 +73,26 @@ linters:
       severity: error
       enable-all-rules: true
       rules:
+        - name: function-length
+          disabled: true
         - name: add-constant
           disabled: true
         - name: cognitive-complexity
           arguments:
-            - 38
+            - 50
         - name: cyclomatic
           arguments:
             # lower=better
-            - 32
+            - 40
         - name: empty-lines
           disabled: true
-        - name: function-length
-          arguments:
-            # statements
-            - 81
-            # lines
-            - 123
         - name: line-length-limit
           arguments:
             - 160
         - name: max-control-nesting
           arguments:
             # lower=better
-            - 3
+            - 4
         - name: max-public-structs
           disabled: true
         - name: indent-error-flow

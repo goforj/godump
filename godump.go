@@ -145,6 +145,7 @@ func printDumpHeader(out io.Writer, skip int) {
 // findFirstNonInternalFrame finds the first non-internal frame in the call stack.
 var callerFn = runtime.Caller
 
+// findFirstNonInternalFrame iterates through the call stack to find the first non-internal frame.
 func findFirstNonInternalFrame() (string, int) {
 	for i := 2; i < 10; i++ {
 		pc, file, line, ok := callerFn(i)
@@ -157,6 +158,74 @@ func findFirstNonInternalFrame() (string, int) {
 		}
 	}
 	return "", 0
+}
+
+// formatByteSliceAsHexDump formats a byte slice as a hex dump with ASCII representation.
+func formatByteSliceAsHexDump(b []byte, indent int) string {
+	var sb strings.Builder
+
+	const lineLen = 16
+	const asciiStartCol = 50
+	const asciiMaxLen = 16
+
+	fieldIndent := strings.Repeat(" ", indent*indentWidth)
+	bodyIndent := fieldIndent
+
+	// Header
+	sb.WriteString(fmt.Sprintf("([]uint8) (len=%d cap=%d) {\n", len(b), cap(b)))
+
+	for i := 0; i < len(b); i += lineLen {
+		end := min(i+lineLen, len(b))
+		line := b[i:end]
+
+		visibleLen := 0
+
+		// Offset
+		offsetStr := fmt.Sprintf("%08x  ", i)
+		sb.WriteString(bodyIndent)
+		sb.WriteString(colorize(colorMeta, offsetStr))
+		visibleLen += len(offsetStr)
+
+		// Hex bytes
+		for j := range lineLen {
+			var hexStr string
+			if j < len(line) {
+				hexStr = fmt.Sprintf("%02x ", line[j])
+			} else {
+				hexStr = "   "
+			}
+			if j == 7 {
+				hexStr += " "
+			}
+			sb.WriteString(colorize(colorCyan, hexStr))
+			visibleLen += len(hexStr)
+		}
+
+		// Padding before ASCII
+		padding := max(1, asciiStartCol-visibleLen)
+		sb.WriteString(strings.Repeat(" ", padding))
+
+		// ASCII section
+		sb.WriteString(colorize(colorGray, "| "))
+		asciiCount := 0
+		for _, c := range line {
+			ch := "."
+			if c >= 32 && c <= 126 {
+				ch = string(c)
+			}
+			sb.WriteString(colorize(colorLime, ch))
+			asciiCount++
+		}
+		if asciiCount < asciiMaxLen {
+			sb.WriteString(strings.Repeat(" ", asciiMaxLen-asciiCount))
+		}
+		sb.WriteString(colorize(colorGray, " |") + "\n")
+	}
+
+	// Closing
+	fieldIndent = fieldIndent[:len(fieldIndent)-indentWidth]
+	sb.WriteString(fieldIndent + "}")
+	return sb.String()
 }
 
 // callerLocation returns the file and line number of the caller at the specified skip level.
@@ -269,6 +338,18 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 		indentPrint(tw, indent, "")
 		fmt.Fprint(tw, "}")
 	case reflect.Slice, reflect.Array:
+		// []byte handling
+		if v.Type().Elem().Kind() == reflect.Uint8 {
+			if v.CanConvert(reflect.TypeOf([]byte{})) { // Check if it can be converted to []byte
+				if data, ok := v.Convert(reflect.TypeOf([]byte{})).Interface().([]byte); ok {
+					hexDump := formatByteSliceAsHexDump(data, indent+1)
+					fmt.Fprint(tw, colorize(colorLime, hexDump))
+					break
+				}
+			}
+		}
+
+		// Default rendering for other slices/arrays
 		fmt.Fprintln(tw, "[")
 		for i := range v.Len() {
 			if i >= maxItems {
@@ -281,6 +362,7 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 		}
 		indentPrint(tw, indent, "")
 		fmt.Fprint(tw, "]")
+
 	case reflect.String:
 		str := escapeControl(v.String())
 		if utf8.RuneCountInString(str) > maxStringLen {
