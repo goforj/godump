@@ -215,7 +215,7 @@ func TestUnreadableFallback(t *testing.T) {
 	var ch chan int // nil typed value, not interface
 	rv := reflect.ValueOf(ch)
 
-	printValue(tw, rv, 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, rv, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	output := stripANSI(b.String())
@@ -235,7 +235,7 @@ func TestUnreadableFieldFallback(t *testing.T) {
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 
-	printValue(tw, v, 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	out := stripANSI(sb.String())
@@ -288,7 +288,7 @@ func TestDefaultFallback_Unreadable(t *testing.T) {
 
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, v, 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "<invalid>")
@@ -299,7 +299,7 @@ func TestPrintValue_Uintptr(t *testing.T) {
 	val := uintptr(12345)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "12345")
@@ -311,7 +311,7 @@ func TestPrintValue_UnsafePointer(t *testing.T) {
 	up := unsafe.Pointer(&i)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "unsafe.Pointer")
@@ -321,7 +321,7 @@ func TestPrintValue_Func(t *testing.T) {
 	fn := func() {}
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "func(...) {...}")
@@ -339,6 +339,21 @@ func TestMaxDepthTruncation(t *testing.T) {
 	}
 
 	out := stripANSI(DumpStr(root))
+	assert.Contains(t, out, "... (max depth)")
+}
+
+func TestCustomMaxDepthTruncation(t *testing.T) {
+	type Node struct {
+		Next *Node
+	}
+	root := &Node{}
+	curr := root
+	for range 3 {
+		curr.Next = &Node{}
+		curr = curr.Next
+	}
+
+	out := stripANSI(WithOptions(WithMaxDepth(2)).DumpStr(root))
 	assert.Contains(t, out, "... (max depth)")
 }
 
@@ -399,22 +414,32 @@ func TestNilChan(t *testing.T) {
 }
 
 func TestTruncatedSlice(t *testing.T) {
-	orig := maxItems
-	maxItems = 5
-	defer func() { maxItems = orig }()
-	slice := make([]int, 10)
+	slice := make([]int, 101)
 	out := DumpStr(slice)
 	if !strings.Contains(out, "... (truncated)") {
 		t.Error("Expected slice to be truncated")
 	}
 }
 
+func TestCustomTruncatedSlice(t *testing.T) {
+	slice := make([]int, 3)
+	out := WithOptions(WithMaxItems(2)).DumpStr(slice)
+	if !strings.Contains(out, "... (truncated)") {
+		t.Error("Expected slice to be truncated")
+	}
+}
+
 func TestTruncatedString(t *testing.T) {
-	orig := maxStringLen
-	maxStringLen = 10
-	defer func() { maxStringLen = orig }()
-	s := strings.Repeat("x", 50)
+	s := strings.Repeat("x", 100001)
 	out := DumpStr(s)
+	if !strings.Contains(out, "…") {
+		t.Error("Expected long string to be truncated")
+	}
+}
+
+func TestCustomTruncatedString(t *testing.T) {
+	s := strings.Repeat("x", 10)
+	out := WithOptions(WithMaxStringLen(9)).DumpStr(s)
 	if !strings.Contains(out, "…") {
 		t.Error("Expected long string to be truncated")
 	}
@@ -431,7 +456,7 @@ func TestDefaultBranchFallback(t *testing.T) {
 	var v reflect.Value // zero reflect.Value
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	printValue(tw, v, 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 	if !strings.Contains(sb.String(), "<invalid>") {
 		t.Error("Expected default fallback for invalid reflect.Value")
@@ -722,7 +747,7 @@ func TestPrintValue_ChanNilBranch_Hardforce(t *testing.T) {
 	assert.True(t, v.IsNil())
 	assert.Equal(t, reflect.Chan, v.Kind())
 
-	printValue(tw, v, 0, map[uintptr]bool{})
+	WithOptions().printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	out := stripANSI(buf.String())

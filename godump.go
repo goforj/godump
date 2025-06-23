@@ -67,35 +67,94 @@ func htmlColorize(code, str string) string {
 	return fmt.Sprintf(`<span style="color:%s">%s</span>`, htmlColorMap[code], str)
 }
 
+type dumper struct {
+	maxDepth     int
+	maxItems     int
+	maxStringLen int
+}
+
+type Option func(*dumper) *dumper
+
+func WithMaxDepth(n int) Option {
+	return func(d *dumper) *dumper {
+		d.maxDepth = n
+		return d
+	}
+}
+func WithMaxItems(n int) Option {
+	return func(d *dumper) *dumper {
+		d.maxItems = n
+		return d
+	}
+}
+func WithMaxStringLen(n int) Option {
+	return func(d *dumper) *dumper {
+		d.maxStringLen = n
+		return d
+	}
+}
+
+func WithOptions(opts ...Option) *dumper {
+	d := &dumper{
+		maxDepth:     maxDepth,
+		maxItems:     maxItems,
+		maxStringLen: maxStringLen,
+	}
+	for _, opt := range opts {
+		d = opt(d)
+	}
+	return d
+}
+
 // Dump prints the values to stdout with colorized output.
 func Dump(vs ...any) {
+	WithOptions().Dump(vs...)
+}
+
+// Dump prints the values to stdout with colorized output.
+func (d *dumper) Dump(vs ...any) {
 	printDumpHeader(os.Stdout, 3)
 	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
-	writeDump(tw, vs...)
+	d.writeDump(tw, vs...)
 	tw.Flush()
 }
 
 // Fdump writes the formatted dump of values to the given io.Writer.
 func Fdump(w io.Writer, vs ...any) {
+	WithOptions().Fdump(w, vs...)
+}
+
+// Fdump writes the formatted dump of values to the given io.Writer.
+func (d *dumper) Fdump(w io.Writer, vs ...any) {
 	printDumpHeader(w, 3)
 	tw := tabwriter.NewWriter(w, 0, 0, 1, ' ', 0)
-	writeDump(tw, vs...)
+	d.writeDump(tw, vs...)
 	tw.Flush()
 }
 
 // DumpStr dumps the values as a string with colorized output.
 func DumpStr(vs ...any) string {
+	return WithOptions().DumpStr(vs...)
+}
+
+// DumpStr dumps the values as a string with colorized output.
+func (d *dumper) DumpStr(vs ...any) string {
 	var sb strings.Builder
 	printDumpHeader(&sb, 3)
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	writeDump(tw, vs...)
+	d.writeDump(tw, vs...)
 	tw.Flush()
 	return sb.String()
 }
 
 // DumpHTML dumps the values as HTML with colorized output.
 func DumpHTML(vs ...any) string {
-	prevColorize := ansiColorize
+	return WithOptions().DumpHTML(vs...)
+}
+
+// DumpHTML dumps the values as HTML with colorized output.
+func (d *dumper) DumpHTML(vs ...any) string {
+	prevColorize := colorize
 	prevEnable := enableColor
 	defer func() {
 		colorize = prevColorize
@@ -111,7 +170,7 @@ func DumpHTML(vs ...any) string {
 
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 	printDumpHeader(&sb, 3)
-	writeDump(tw, vs...)
+	d.writeDump(tw, vs...)
 	tw.Flush()
 
 	sb.WriteString("</pre></body>")
@@ -120,7 +179,12 @@ func DumpHTML(vs ...any) string {
 
 // Dd is a debug function that prints the values and exits the program.
 func Dd(vs ...any) {
-	Dump(vs...)
+	WithOptions().Dd(vs...)
+}
+
+// Dd is a debug function that prints the values and exits the program.
+func (d *dumper) Dd(vs ...any) {
+	d.Dump(vs...)
 	exitFunc(1)
 }
 
@@ -238,20 +302,19 @@ func callerLocation(skip int) (string, int) {
 }
 
 // writeDump writes the values to the tabwriter, handling references and indentation.
-func writeDump(tw *tabwriter.Writer, vs ...any) {
+func (d *dumper) writeDump(tw *tabwriter.Writer, vs ...any) {
 	referenceMap = map[uintptr]int{} // reset each time
 	visited := map[uintptr]bool{}
 	for _, v := range vs {
 		rv := reflect.ValueOf(v)
 		rv = makeAddressable(rv)
-		printValue(tw, rv, 0, visited)
+		d.printValue(tw, rv, 0, visited)
 		fmt.Fprintln(tw)
 	}
 }
 
-// printValue recursively prints the value with indentation and handles references.
-func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[uintptr]bool) {
-	if indent > maxDepth {
+func (d *dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[uintptr]bool) {
+	if indent > d.maxDepth {
 		fmt.Fprint(tw, colorize(colorGray, "... (max depth)"))
 		return
 	}
@@ -294,7 +357,7 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 
 	switch v.Kind() {
 	case reflect.Ptr, reflect.Interface:
-		printValue(tw, v.Elem(), indent, visited)
+		d.printValue(tw, v.Elem(), indent, visited)
 	case reflect.Struct:
 		t := v.Type()
 		fmt.Fprintf(tw, "%s ", colorize(colorGray, "#"+t.String()))
@@ -314,7 +377,7 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 			if s := asStringer(fieldVal); s != "" {
 				fmt.Fprint(tw, s)
 			} else {
-				printValue(tw, fieldVal, indent+1, visited)
+				d.printValue(tw, fieldVal, indent+1, visited)
 			}
 			fmt.Fprintln(tw)
 		}
@@ -328,13 +391,13 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 		fmt.Fprintln(tw, "{")
 		keys := v.MapKeys()
 		for i, key := range keys {
-			if i >= maxItems {
+			if i >= d.maxItems {
 				indentPrint(tw, indent+1, colorize(colorGray, "... (truncated)"))
 				break
 			}
 			keyStr := fmt.Sprintf("%v", key.Interface())
 			indentPrint(tw, indent+1, fmt.Sprintf(" %s => ", colorize(colorMeta, keyStr)))
-			printValue(tw, v.MapIndex(key), indent+1, visited)
+			d.printValue(tw, v.MapIndex(key), indent+1, visited)
 			fmt.Fprintln(tw)
 		}
 		indentPrint(tw, indent, "")
@@ -354,22 +417,21 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 		// Default rendering for other slices/arrays
 		fmt.Fprintln(tw, "[")
 		for i := range v.Len() {
-			if i >= maxItems {
+			if i >= d.maxItems {
 				indentPrint(tw, indent+1, colorize(colorGray, "... (truncated)\n"))
 				break
 			}
 			indentPrint(tw, indent+1, fmt.Sprintf("%s => ", colorize(colorCyan, fmt.Sprintf("%d", i))))
-			printValue(tw, v.Index(i), indent+1, visited)
+			d.printValue(tw, v.Index(i), indent+1, visited)
 			fmt.Fprintln(tw)
 		}
 		indentPrint(tw, indent, "")
 		fmt.Fprint(tw, "]")
-
 	case reflect.String:
 		str := escapeControl(v.String())
-		if utf8.RuneCountInString(str) > maxStringLen {
+		if utf8.RuneCountInString(str) > d.maxStringLen {
 			runes := []rune(str)
-			str = string(runes[:maxStringLen]) + "…"
+			str = string(runes[:d.maxStringLen]) + "…"
 		}
 		fmt.Fprint(tw, colorize(colorYellow, `"`)+colorize(colorLime, str)+colorize(colorYellow, `"`))
 	case reflect.Bool:
