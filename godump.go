@@ -107,14 +107,14 @@ func DumpHTML(vs ...any) string {
 	enableColor = true
 
 	var sb strings.Builder
-	sb.WriteString(`<body style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px"></body>` + "\n")
+	sb.WriteString(`<body style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
 
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 	printDumpHeader(&sb, 3)
 	writeDump(tw, vs...)
 	tw.Flush()
 
-	sb.WriteString("</pre>")
+	sb.WriteString("</pre></body>")
 	return sb.String()
 }
 
