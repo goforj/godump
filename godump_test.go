@@ -355,6 +355,12 @@ func TestCustomMaxDepthTruncation(t *testing.T) {
 
 	out := stripANSI(WithOptions(WithMaxDepth(2)).DumpStr(root))
 	assert.Contains(t, out, "... (max depth)")
+
+	out = stripANSI(WithOptions(WithMaxDepth(0)).DumpStr(root))
+	assert.Contains(t, out, "... (max depth)")
+
+	out = stripANSI(WithOptions(WithMaxDepth(-1)).DumpStr(root))
+	assert.NotContains(t, out, "... (max depth)")
 }
 
 func TestDetectColorEnvVars(t *testing.T) {
@@ -427,6 +433,16 @@ func TestCustomTruncatedSlice(t *testing.T) {
 	if !strings.Contains(out, "... (truncated)") {
 		t.Error("Expected slice to be truncated")
 	}
+
+	out = WithOptions(WithMaxItems(0)).DumpStr(slice)
+	if !strings.Contains(out, "... (truncated)") {
+		t.Error("Expected slice to be truncated")
+	}
+
+	out = WithOptions(WithMaxItems(-1)).DumpStr(slice)
+	if strings.Contains(out, "... (truncated)") {
+		t.Error("Negative MaxItems option should not be applied")
+	}
 }
 
 func TestTruncatedString(t *testing.T) {
@@ -442,6 +458,16 @@ func TestCustomTruncatedString(t *testing.T) {
 	out := WithOptions(WithMaxStringLen(9)).DumpStr(s)
 	if !strings.Contains(out, "…") {
 		t.Error("Expected long string to be truncated")
+	}
+
+	out = WithOptions(WithMaxStringLen(0)).DumpStr(s)
+	if !strings.Contains(out, "…") {
+		t.Error("Expected long string to be truncated")
+	}
+
+	out = WithOptions(WithMaxStringLen(-1)).DumpStr(s)
+	if strings.Contains(out, "…") {
+		t.Error("Negative MaxStringLen option should not be applied")
 	}
 }
 
