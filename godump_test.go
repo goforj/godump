@@ -111,11 +111,12 @@ func TestEmbeddedAnonymousStruct(t *testing.T) {
 
 	out := stripANSI(DumpStr(Derived{Base: Base{ID: 456}, Name: "Test"}))
 
-	assert.Contains(t, out, "+Base")
-	assert.Contains(t, out, "+ID")
-	assert.Contains(t, out, "456")
-	assert.Contains(t, out, "+Name")
-	assert.Contains(t, out, "\"Test\"")
+	assert.Contains(t, out, `#godump.Derived 
+  +Base => #godump.Base 
+    +ID => 456
+  }
+  +Name => "Test"
+}`)
 }
 
 func TestControlCharsEscaped(t *testing.T) {
