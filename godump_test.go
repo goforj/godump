@@ -100,6 +100,24 @@ func TestAnonymousStruct(t *testing.T) {
 	assert.Contains(t, out, "123")
 }
 
+func TestEmbeddedAnonymousStruct(t *testing.T) {
+	type Base struct {
+		ID int
+	}
+	type Derived struct {
+		Base
+		Name string
+	}
+
+	out := stripANSI(DumpStr(Derived{Base: Base{ID: 456}, Name: "Test"}))
+
+	assert.Contains(t, out, "+Base")
+	assert.Contains(t, out, "+ID")
+	assert.Contains(t, out, "456")
+	assert.Contains(t, out, "+Name")
+	assert.Contains(t, out, "\"Test\"")
+}
+
 func TestControlCharsEscaped(t *testing.T) {
 	s := "line1\nline2\tok"
 	out := stripANSI(DumpStr(s))
