@@ -78,7 +78,8 @@ type Dumper struct {
 // Option defines a functional option for configuring a Dumper.
 type Option func(*Dumper) *Dumper
 
-// WithMaxDepth allows to control how deep the structure will be dumped. Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15
+// WithMaxDepth allows to control how deep the structure will be dumped.
+// Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15
 func WithMaxDepth(n int) Option {
 	return func(d *Dumper) *Dumper {
 		if n >= 0 {
@@ -88,7 +89,8 @@ func WithMaxDepth(n int) Option {
 	}
 }
 
-// WithMaxItems allows to control how much items from an array, slice or maps can be printed. Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100
+// WithMaxItems allows to control how much items from an array, slice or maps can be printed.
+// Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100
 func WithMaxItems(n int) Option {
 	return func(d *Dumper) *Dumper {
 		if n >= 0 {
@@ -98,7 +100,8 @@ func WithMaxItems(n int) Option {
 	}
 }
 
-// WithMaxStringLen allows to control how long can printed strings be. Param n must be 0 or greater or this will be ignored, and default MaxStringLen will be 100000
+// WithMaxStringLen allows to control how long can printed strings be.
+// Param n must be 0 or greater or this will be ignored, and default MaxStringLen will be 100000
 func WithMaxStringLen(n int) Option {
 	return func(d *Dumper) *Dumper {
 		if n >= 0 {
