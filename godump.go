@@ -108,6 +108,8 @@ func WithMaxStringLen(n int) Option {
 	}
 }
 
+// WithOptions creates a new Dumper with the given options applied.
+// Defaults are used for any setting not overridden.
 func WithOptions(opts ...Option) *Dumper {
 	d := &Dumper{
 		maxDepth:     maxDepth,
