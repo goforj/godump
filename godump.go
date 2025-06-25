@@ -95,7 +95,7 @@ func DumpStr(vs ...any) string {
 
 // DumpHTML dumps the values as HTML with colorized output.
 func DumpHTML(vs ...any) string {
-	prevColorize := ansiColorize
+	prevColorize := colorize
 	prevEnable := enableColor
 	defer func() {
 		colorize = prevColorize
