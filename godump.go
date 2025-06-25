@@ -26,12 +26,17 @@ const (
 	indentWidth  = 2
 )
 
+const (
+	defaultMaxDepth     = 15
+	defaultMaxItems     = 100
+	defaultMaxStringLen = 100000
+)
+
+var defaultDumper = NewDumper()
+
 var exitFunc = os.Exit
 
 var (
-	maxDepth     = 15
-	maxItems     = 100
-	maxStringLen = 100000
 	enableColor  = detectColor()
 	nextRefID    = 1
 	referenceMap = map[uintptr]int{}
@@ -111,13 +116,13 @@ func WithMaxStringLen(n int) Option {
 	}
 }
 
-// WithOptions creates a new Dumper with the given options applied.
+// NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
-func WithOptions(opts ...Option) *Dumper {
+func NewDumper(opts ...Option) *Dumper {
 	d := &Dumper{
-		maxDepth:     maxDepth,
-		maxItems:     maxItems,
-		maxStringLen: maxStringLen,
+		maxDepth:     defaultMaxDepth,
+		maxItems:     defaultMaxItems,
+		maxStringLen: defaultMaxStringLen,
 	}
 	for _, opt := range opts {
 		d = opt(d)
@@ -127,7 +132,7 @@ func WithOptions(opts ...Option) *Dumper {
 
 // Dump prints the values to stdout with colorized output.
 func Dump(vs ...any) {
-	WithOptions().Dump(vs...)
+	defaultDumper.Dump(vs...)
 }
 
 // Dump prints the values to stdout with colorized output.
@@ -140,7 +145,7 @@ func (d *Dumper) Dump(vs ...any) {
 
 // Fdump writes the formatted dump of values to the given io.Writer.
 func Fdump(w io.Writer, vs ...any) {
-	WithOptions().Fdump(w, vs...)
+	defaultDumper.Fdump(w, vs...)
 }
 
 // Fdump writes the formatted dump of values to the given io.Writer.
@@ -153,7 +158,7 @@ func (d *Dumper) Fdump(w io.Writer, vs ...any) {
 
 // DumpStr dumps the values as a string with colorized output.
 func DumpStr(vs ...any) string {
-	return WithOptions().DumpStr(vs...)
+	return defaultDumper.DumpStr(vs...)
 }
 
 // DumpStr dumps the values as a string with colorized output.
@@ -168,7 +173,7 @@ func (d *Dumper) DumpStr(vs ...any) string {
 
 // DumpHTML dumps the values as HTML with colorized output.
 func DumpHTML(vs ...any) string {
-	return WithOptions().DumpHTML(vs...)
+	return defaultDumper.DumpHTML(vs...)
 }
 
 // DumpHTML dumps the values as HTML with colorized output.
@@ -198,7 +203,7 @@ func (d *Dumper) DumpHTML(vs ...any) string {
 
 // Dd is a debug function that prints the values and exits the program.
 func Dd(vs ...any) {
-	WithOptions().Dd(vs...)
+	defaultDumper.Dd(vs...)
 }
 
 // Dd is a debug function that prints the values and exits the program.
@@ -224,7 +229,6 @@ func printDumpHeader(out io.Writer, skip int) {
 	header := fmt.Sprintf("<#dump // %s:%d", relPath, line)
 	fmt.Fprintln(out, colorize(colorGray, header))
 }
-
 
 // findFirstNonInternalFrame finds the first non-internal frame in the call stack.
 var callerFn = runtime.Caller
