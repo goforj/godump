@@ -161,15 +161,45 @@ func TestForceExported(t *testing.T) {
 }
 
 func TestDetectColorVariants(t *testing.T) {
-	_ = os.Setenv("NO_COLOR", "1")
-	assert.False(t, detectColor())
+	t.Run("default color", func(t *testing.T) {
+		// No environment variables set, should default to true
+		assert.True(t, detectColor())
+	})
 
-	_ = os.Unsetenv("NO_COLOR")
-	_ = os.Setenv("FORCE_COLOR", "1")
-	assert.True(t, detectColor())
+	t.Run("no color", func(t *testing.T) {
+		t.Setenv("NO_COLOR", "1")
+		assert.False(t, detectColor())
+	})
 
-	_ = os.Unsetenv("FORCE_COLOR")
-	assert.True(t, detectColor())
+	t.Run("force color", func(t *testing.T) {
+		t.Setenv("FORCE_COLOR", "1")
+		assert.True(t, detectColor())
+	})
+}
+
+func TestNewFormatter(t *testing.T) {
+	t.Run("default color", func(t *testing.T) {
+
+		f := newTextFormatter()
+		str := f.dumpStr("foo")
+		assert.Contains(t, str, "\"\x1b[0m\x1b[38;5;113mfoo\x1b[0m\x1b[33m\"")
+	})
+
+	t.Run("no color", func(t *testing.T) {
+		t.Setenv("NO_COLOR", "1")
+
+		f := newTextFormatter()
+		str := f.dumpStr("foo")
+		assert.Contains(t, str, `"foo"`)
+	})
+
+	t.Run("force color", func(t *testing.T) {
+		t.Setenv("FORCE_COLOR", "1")
+
+		f := newTextFormatter()
+		str := f.dumpStr("foo")
+		assert.Contains(t, str, "\"\x1b[0m\x1b[38;5;113mfoo\x1b[0m\x1b[33m\"")
+	})
 }
 
 func TestPrintDumpHeaderFallback(t *testing.T) {
@@ -321,17 +351,6 @@ func TestMaxDepthTruncation(t *testing.T) {
 
 	out := stripANSI(DumpStr(root))
 	assert.Contains(t, out, "... (max depth)")
-}
-
-func TestDetectColorEnvVars(t *testing.T) {
-	os.Setenv("NO_COLOR", "1")
-	assert.False(t, detectColor())
-
-	os.Unsetenv("NO_COLOR")
-	os.Setenv("FORCE_COLOR", "1")
-	assert.True(t, detectColor())
-
-	os.Unsetenv("FORCE_COLOR")
 }
 
 func TestMapTruncation(t *testing.T) {
