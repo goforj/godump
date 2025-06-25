@@ -380,22 +380,24 @@ func TestNilChan(t *testing.T) {
 }
 
 func TestTruncatedSlice(t *testing.T) {
-	orig := maxItems
-	maxItems = 5
-	defer func() { maxItems = orig }()
+
+	testFormatter := *textFormatter
+	testFormatter.maxItems = 5 // Set a low maxItems to force truncation
+
 	slice := make([]int, 10)
-	out := DumpStr(slice)
+	out := testFormatter.dumpStr(slice)
 	if !strings.Contains(out, "... (truncated)") {
 		t.Error("Expected slice to be truncated")
 	}
 }
 
 func TestTruncatedString(t *testing.T) {
-	orig := maxStringLen
-	maxStringLen = 10
-	defer func() { maxStringLen = orig }()
+
+	testFormatter := *textFormatter
+	testFormatter.maxStringLen = 10 // Set a low maxItems to force truncation
+
 	s := strings.Repeat("x", 50)
-	out := DumpStr(s)
+	out := testFormatter.dumpStr(s)
 	if !strings.Contains(out, "…") {
 		t.Error("Expected long string to be truncated")
 	}

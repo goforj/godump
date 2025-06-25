@@ -28,14 +28,6 @@ const (
 
 var exitFunc = os.Exit
 
-var (
-	maxDepth     = 15
-	maxItems     = 100
-	maxStringLen = 100000
-	nextRefID    = 1
-	referenceMap = map[uintptr]int{}
-)
-
 // Colorizer is a function type that takes a color code and a string, returning the colorized string.
 type Colorizer func(code, str string) string
 
@@ -103,11 +95,23 @@ func Dd(vs ...any) {
 
 // formatter is a struct that holds the colorizer function used for formatting.
 type formatter struct {
+	maxDepth     int
+	maxItems     int
+	maxStringLen int
+	nextRefID    int
+	referenceMap map[uintptr]int
+
 	format Colorizer
 }
 
 func newFormatter(colorizer Colorizer) *formatter {
 	return &formatter{
+		maxDepth:     15,
+		maxItems:     100,
+		maxStringLen: 100,
+		nextRefID:    1,
+		referenceMap: make(map[uintptr]int),
+
 		format: colorizer,
 	}
 }
@@ -248,7 +252,7 @@ func callerLocation(skip int) (string, int) {
 
 // write writes the values to the tabwriter, handling references and indentation.
 func (f *formatter) write(tw *tabwriter.Writer, vs ...any) {
-	referenceMap = map[uintptr]int{} // reset each time
+	f.referenceMap = map[uintptr]int{} // reset each time
 	visited := map[uintptr]bool{}
 	for _, v := range vs {
 		rv := reflect.ValueOf(v)
@@ -260,7 +264,7 @@ func (f *formatter) write(tw *tabwriter.Writer, vs ...any) {
 
 // printValue recursively prints the value with indentation and handles references.
 func (f *formatter) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[uintptr]bool) {
-	if indent > maxDepth {
+	if indent > f.maxDepth {
 		fmt.Fprint(tw, f.format(colorGray, "... (max depth)"))
 		return
 	}
@@ -292,12 +296,12 @@ func (f *formatter) printValue(tw *tabwriter.Writer, v reflect.Value, indent int
 
 	if v.Kind() == reflect.Ptr && v.CanAddr() {
 		ptr := v.Pointer()
-		if id, ok := referenceMap[ptr]; ok {
+		if id, ok := f.referenceMap[ptr]; ok {
 			fmt.Fprintf(tw, f.format(colorRef, "↩︎ &%d"), id)
 			return
 		} else {
-			referenceMap[ptr] = nextRefID
-			nextRefID++
+			f.referenceMap[ptr] = f.nextRefID
+			f.nextRefID++
 		}
 	}
 
@@ -335,7 +339,7 @@ func (f *formatter) printValue(tw *tabwriter.Writer, v reflect.Value, indent int
 		fmt.Fprintln(tw, "{")
 		keys := v.MapKeys()
 		for i, key := range keys {
-			if i >= maxItems {
+			if i >= f.maxItems {
 				indentPrint(tw, indent+1, f.format(colorGray, "... (truncated)"))
 				break
 			}
@@ -361,7 +365,7 @@ func (f *formatter) printValue(tw *tabwriter.Writer, v reflect.Value, indent int
 		// Default rendering for other slices/arrays
 		fmt.Fprintln(tw, "[")
 		for i := range v.Len() {
-			if i >= maxItems {
+			if i >= f.maxItems {
 				indentPrint(tw, indent+1, f.format(colorGray, "... (truncated)\n"))
 				break
 			}
@@ -374,9 +378,9 @@ func (f *formatter) printValue(tw *tabwriter.Writer, v reflect.Value, indent int
 
 	case reflect.String:
 		str := escapeControl(v.String())
-		if utf8.RuneCountInString(str) > maxStringLen {
+		if utf8.RuneCountInString(str) > f.maxStringLen {
 			runes := []rune(str)
-			str = string(runes[:maxStringLen]) + "…"
+			str = string(runes[:f.maxStringLen]) + "…"
 		}
 		fmt.Fprint(tw, f.format(colorYellow, `"`)+f.format(colorLime, str)+f.format(colorYellow, `"`))
 	case reflect.Bool:
