@@ -215,7 +215,7 @@ func TestUnreadableFallback(t *testing.T) {
 	var ch chan int // nil typed value, not interface
 	rv := reflect.ValueOf(ch)
 
-	NewDumper().printValue(tw, rv, 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, rv, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	output := stripANSI(b.String())
@@ -235,7 +235,7 @@ func TestUnreadableFieldFallback(t *testing.T) {
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 
-	NewDumper().printValue(tw, v, 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	out := stripANSI(sb.String())
@@ -288,7 +288,7 @@ func TestDefaultFallback_Unreadable(t *testing.T) {
 
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	NewDumper().printValue(tw, v, 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "<invalid>")
@@ -299,7 +299,7 @@ func TestPrintValue_Uintptr(t *testing.T) {
 	val := uintptr(12345)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	NewDumper().printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "12345")
@@ -311,7 +311,7 @@ func TestPrintValue_UnsafePointer(t *testing.T) {
 	up := unsafe.Pointer(&i)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	NewDumper().printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "unsafe.Pointer")
@@ -321,7 +321,7 @@ func TestPrintValue_Func(t *testing.T) {
 	fn := func() {}
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	NewDumper().printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "func(...) {...}")
@@ -482,7 +482,7 @@ func TestDefaultBranchFallback(t *testing.T) {
 	var v reflect.Value // zero reflect.Value
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	NewDumper().printValue(tw, v, 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 	if !strings.Contains(sb.String(), "<invalid>") {
 		t.Error("Expected default fallback for invalid reflect.Value")
@@ -773,7 +773,7 @@ func TestPrintValue_ChanNilBranch_Hardforce(t *testing.T) {
 	assert.True(t, v.IsNil())
 	assert.Equal(t, reflect.Chan, v.Kind())
 
-	NewDumper().printValue(tw, v, 0, map[uintptr]bool{})
+	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	out := stripANSI(buf.String())
