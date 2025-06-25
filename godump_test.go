@@ -3,7 +3,6 @@ package godump
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"os"
 	"reflect"
 	"regexp"
@@ -15,6 +14,7 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // stripANSI removes ANSI color codes for testable output.
@@ -174,12 +174,12 @@ func TestDetectColorVariants(t *testing.T) {
 
 func TestPrintDumpHeaderFallback(t *testing.T) {
 	// Intentionally skip enough frames so findFirstNonInternalFrame returns empty
-	printDumpHeader(os.Stdout, 100)
+	textFormatter.printHeader(os.Stdout, 100)
 }
 
 func TestHtmlColorizeUnknown(t *testing.T) {
 	// Color not in htmlColorMap
-	out := htmlColorize("\033[999m", "test")
+	out := htmlFormatter.format("\033[999m", "test")
 	assert.Contains(t, out, `<span style="color:`)
 	assert.Contains(t, out, "test")
 }
@@ -196,7 +196,7 @@ func TestUnreadableFallback(t *testing.T) {
 	var ch chan int // nil typed value, not interface
 	rv := reflect.ValueOf(ch)
 
-	printValue(tw, rv, 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, rv, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	output := stripANSI(b.String())
@@ -216,7 +216,7 @@ func TestUnreadableFieldFallback(t *testing.T) {
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 
-	printValue(tw, v, 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	out := stripANSI(sb.String())
@@ -269,7 +269,7 @@ func TestDefaultFallback_Unreadable(t *testing.T) {
 
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, v, 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "<invalid>")
@@ -280,7 +280,7 @@ func TestPrintValue_Uintptr(t *testing.T) {
 	val := uintptr(12345)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "12345")
@@ -292,7 +292,7 @@ func TestPrintValue_UnsafePointer(t *testing.T) {
 	up := unsafe.Pointer(&i)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "unsafe.Pointer")
@@ -302,7 +302,7 @@ func TestPrintValue_Func(t *testing.T) {
 	fn := func() {}
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "func(...) {...}")
@@ -412,7 +412,7 @@ func TestDefaultBranchFallback(t *testing.T) {
 	var v reflect.Value // zero reflect.Value
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	printValue(tw, v, 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 	if !strings.Contains(sb.String(), "<invalid>") {
 		t.Error("Expected default fallback for invalid reflect.Value")
@@ -616,11 +616,7 @@ func TestTheKitchenSink(t *testing.T) {
 }
 
 func TestAnsiColorize_Disabled(t *testing.T) {
-	orig := enableColor
-	enableColor = false
-	defer func() { enableColor = orig }()
-
-	out := ansiColorize(colorYellow, "test")
+	out := formatNoColor(colorYellow, "test")
 	assert.Equal(t, "test", out)
 }
 
@@ -632,11 +628,7 @@ func TestForceExportedFallback(t *testing.T) {
 }
 
 func TestAnsiColorize_DisabledBranch(t *testing.T) {
-	orig := enableColor
-	enableColor = false
-	defer func() { enableColor = orig }()
-
-	out := ansiColorize(colorLime, "xyz")
+	out := formatNoColor(colorLime, "xyz")
 	assert.Equal(t, "xyz", out)
 }
 
@@ -672,7 +664,7 @@ func TestPrintDumpHeader_SkipWhenNoFrame(t *testing.T) {
 	}
 
 	var b strings.Builder
-	printDumpHeader(&b, 3)
+	textFormatter.printHeader(&b, 3)
 	assert.Equal(t, "", b.String()) // nothing should be written
 }
 
@@ -703,7 +695,7 @@ func TestPrintValue_ChanNilBranch_Hardforce(t *testing.T) {
 	assert.True(t, v.IsNil())
 	assert.Equal(t, reflect.Chan, v.Kind())
 
-	printValue(tw, v, 0, map[uintptr]bool{})
+	textFormatter.printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	out := stripANSI(buf.String())
@@ -725,7 +717,7 @@ func TestAsStringer_ForceExported(t *testing.T) {
 	v := reflect.ValueOf(h).Elem().FieldByName("secret") // now v.CanAddr() is true, but v.CanInterface() is false
 
 	assert.False(t, v.CanInterface(), "field must not be interfaceable")
-	str := asStringer(v)
+	str := textFormatter.asStringer(v)
 
 	assert.Contains(t, str, "👻 hidden stringer")
 }
