@@ -385,7 +385,7 @@ func printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[u
 	case reflect.Float32, reflect.Float64:
 		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprintf("%f", v.Float())))
 	case reflect.Func:
-		fmt.Fprint(tw, colorize(colorGray, "func(...) {...}"))
+		fmt.Fprint(tw, colorize(colorGray, v.Type().String()))
 	default:
 		// unreachable; all reflect.Kind cases are handled
 	}

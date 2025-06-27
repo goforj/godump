@@ -129,7 +129,7 @@ func TestControlCharsEscaped(t *testing.T) {
 func TestFuncPlaceholder(t *testing.T) {
 	fn := func() {}
 	out := stripANSI(DumpStr(fn))
-	assert.Contains(t, out, "func(...) {...}")
+	assert.Contains(t, out, "func()")
 }
 
 func TestSpecialTypes(t *testing.T) {
@@ -324,7 +324,7 @@ func TestPrintValue_Func(t *testing.T) {
 	printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
 	tw.Flush()
 
-	assert.Contains(t, buf.String(), "func(...) {...}")
+	assert.Contains(t, buf.String(), "func()")
 }
 
 func TestMaxDepthTruncation(t *testing.T) {
