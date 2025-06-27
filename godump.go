@@ -95,7 +95,7 @@ func WithMaxDepth(n int) Option {
 	}
 }
 
-// WithMaxItems allows to control how much items from an array, slice or maps can be printed.
+// WithMaxItems allows to control how many items from an array, slice or maps can be printed.
 // Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100
 func WithMaxItems(n int) Option {
 	return func(d *Dumper) *Dumper {
@@ -155,7 +155,7 @@ func (d *Dumper) Dump(vs ...any) {
 
 // Fdump writes the formatted dump of values to the given io.Writer.
 //
-// Deprecated, use NewDumper with WithWriter(w io.Writer) option
+// Deprecated: use NewDumper with WithWriter(w io.Writer) option
 func Fdump(w io.Writer, vs ...any) {
 	NewDumper(WithWriter(w)).Dump(vs...)
 }
