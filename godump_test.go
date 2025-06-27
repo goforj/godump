@@ -854,6 +854,40 @@ func TestFdump_WritesToWriter(t *testing.T) {
 	}
 }
 
+func TestDumpWithCustomWriter(t *testing.T) {
+	var buf strings.Builder
+
+	type Inner struct {
+		Field string
+	}
+	type Outer struct {
+		InnerField Inner
+		Number     int
+	}
+
+	val := Outer{
+		InnerField: Inner{Field: "hello"},
+		Number:     42,
+	}
+
+	NewDumper(WithWriter(&buf)).Dump(val)
+
+	out := buf.String()
+
+	if !strings.Contains(out, "Outer") {
+		t.Errorf("expected output to contain type name 'Outer', got: %s", out)
+	}
+	if !strings.Contains(out, "InnerField") || !strings.Contains(out, "hello") {
+		t.Errorf("expected nested struct and field to appear, got: %s", out)
+	}
+	if !strings.Contains(out, "Number") || !strings.Contains(out, "42") {
+		t.Errorf("expected field 'Number' with value '42', got: %s", out)
+	}
+	if !strings.Contains(out, "<#dump //") {
+		t.Errorf("expected dump header with file and line, got: %s", out)
+	}
+}
+
 // TestHexDumpRendering checks that the hex dump output is rendered correctly.
 func TestHexDumpRendering(t *testing.T) {
 	input := []byte(`{"error":"kek","last_error":"not implemented","lol":"ok"}`)

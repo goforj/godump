@@ -78,6 +78,7 @@ type Dumper struct {
 	maxDepth     int
 	maxItems     int
 	maxStringLen int
+	writer       io.Writer
 }
 
 // Option defines a functional option for configuring a Dumper.
@@ -116,6 +117,14 @@ func WithMaxStringLen(n int) Option {
 	}
 }
 
+// WithWriter allows to control the io output.
+func WithWriter(w io.Writer) Option {
+	return func(d *Dumper) *Dumper {
+		d.writer = w
+		return d
+	}
+}
+
 // NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
 func NewDumper(opts ...Option) *Dumper {
@@ -123,6 +132,7 @@ func NewDumper(opts ...Option) *Dumper {
 		maxDepth:     defaultMaxDepth,
 		maxItems:     defaultMaxItems,
 		maxStringLen: defaultMaxStringLen,
+		writer:       os.Stdout,
 	}
 	for _, opt := range opts {
 		d = opt(d)
@@ -137,23 +147,17 @@ func Dump(vs ...any) {
 
 // Dump prints the values to stdout with colorized output.
 func (d *Dumper) Dump(vs ...any) {
-	printDumpHeader(os.Stdout, 3)
-	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
+	printDumpHeader(d.writer, 3)
+	tw := tabwriter.NewWriter(d.writer, 0, 0, 1, ' ', 0)
 	d.writeDump(tw, vs...)
 	tw.Flush()
 }
 
 // Fdump writes the formatted dump of values to the given io.Writer.
+//
+// Deprecated, use NewDumper with WithWriter(w io.Writer) option
 func Fdump(w io.Writer, vs ...any) {
-	defaultDumper.Fdump(w, vs...)
-}
-
-// Fdump writes the formatted dump of values to the given io.Writer.
-func (d *Dumper) Fdump(w io.Writer, vs ...any) {
-	printDumpHeader(w, 3)
-	tw := tabwriter.NewWriter(w, 0, 0, 1, ' ', 0)
-	d.writeDump(tw, vs...)
-	tw.Flush()
+	NewDumper(WithWriter(w)).Dump(vs...)
 }
 
 // DumpStr dumps the values as a string with colorized output.
