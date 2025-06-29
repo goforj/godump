@@ -26,14 +26,17 @@ const (
 	indentWidth  = 2
 )
 
+// Default configuration values for the Dumper.
 const (
 	defaultMaxDepth     = 15
 	defaultMaxItems     = 100
 	defaultMaxStringLen = 100000
 )
 
+// defaultDumper is the default Dumper instance used by Dump and DumpStr functions.
 var defaultDumper = NewDumper()
 
+// exitFunc is a function that can be overridden for testing purposes.
 var exitFunc = os.Exit
 
 var (
@@ -154,8 +157,6 @@ func (d *Dumper) Dump(vs ...any) {
 }
 
 // Fdump writes the formatted dump of values to the given io.Writer.
-//
-// Deprecated: use NewDumper with WithWriter(w io.Writer) option
 func Fdump(w io.Writer, vs ...any) {
 	NewDumper(WithWriter(w)).Dump(vs...)
 }
@@ -542,6 +543,7 @@ func isNil(v reflect.Value) bool {
 	}
 }
 
+// replacer is used to escape control characters in strings.
 var replacer = strings.NewReplacer(
 	"\n", `\n`,
 	"\t", `\t`,
