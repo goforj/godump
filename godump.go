@@ -161,12 +161,12 @@ func Fdump(w io.Writer, vs ...any) {
 	NewDumper(WithWriter(w)).Dump(vs...)
 }
 
-// DumpStr dumps the values as a string with colorized output.
+// DumpStr returns a string representation of the values with colorized output.
 func DumpStr(vs ...any) string {
 	return defaultDumper.DumpStr(vs...)
 }
 
-// DumpStr dumps the values as a string with colorized output.
+// DumpStr returns a string representation of the values with colorized output.
 func (d *Dumper) DumpStr(vs ...any) string {
 	var sb strings.Builder
 	printDumpHeader(&sb, 3)
