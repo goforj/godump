@@ -60,6 +60,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"github.com/goforj/godump"
 )
 
@@ -109,6 +110,20 @@ func main() {
 
 	// Use the custom dumper
 	d.Dump(user)
+
+	// Dump to string
+	out := d.DumpStr(user)
+	println("DumpStr output:", out)
+
+	// Dump to HTML string
+	html = d.DumpHTML(user)
+	println("DumpHTML output:", html)
+
+	// Dump to custom writer (e.g. a string builder)
+	var sb strings.Builder
+	custom := godump.NewDumper(godump.WithWriter(&sb))
+	custom.Dump(user)
+	println("Dump to string builder:", sb.String())
 }
 ```
 
