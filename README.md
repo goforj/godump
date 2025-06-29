@@ -98,6 +98,17 @@ func main() {
 	
 	// Write to any io.Writer (e.g. file, buffer, logger)
 	godump.Fdump(os.Stderr, user)
+
+	// Custom Dumper with all options set explicitly
+	d := godump.NewDumper(
+		godump.WithMaxDepth(15),          // default: 15
+		godump.WithMaxItems(100),         // default: 100
+		godump.WithMaxStringLen(100000),  // default: 100000
+		godump.WithWriter(os.Stdout),     // default: os.Stdout
+	)
+
+	// Use the custom dumper
+	d.Dump(user)
 }
 ```
 
