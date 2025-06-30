@@ -206,11 +206,6 @@ func TestHtmlColorizeUnknown(t *testing.T) {
 	assert.Contains(t, out, "test")
 }
 
-// package-level type + method
-type secret struct{}
-
-func (secret) hidden() {}
-
 func TestUnreadableFallback(t *testing.T) {
 	var b strings.Builder
 	tw := tabwriter.NewWriter(&b, 0, 0, 1, ' ', 0)
