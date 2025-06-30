@@ -165,12 +165,6 @@ func TestDumpHTML(t *testing.T) {
 	assert.Contains(t, html, `bar`)
 }
 
-func TestCallerLocation(t *testing.T) {
-	file, line := callerLocation(0)
-	assert.NotEmpty(t, file)
-	assert.Greater(t, line, 0)
-}
-
 func TestForceExported(t *testing.T) {
 	type hidden struct {
 		private string
@@ -750,19 +744,6 @@ func TestPrintDumpHeader_SkipWhenNoFrame(t *testing.T) {
 }
 
 var runtimeCaller = runtime.Caller
-
-func TestCallerLocation_Fallback(t *testing.T) {
-	// Override runtime.Caller behavior
-	orig := runtimeCaller
-	defer func() { runtimeCaller = orig }()
-	runtimeCaller = func(skip int) (uintptr, string, int, bool) {
-		return 0, "", 0, false
-	}
-
-	file, line := callerLocation(5)
-	assert.Equal(t, "", file)
-	assert.Equal(t, 0, line)
-}
 
 type customChan chan int
 

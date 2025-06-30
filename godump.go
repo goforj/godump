@@ -360,15 +360,6 @@ func formatByteSliceAsHexDump(b []byte, indent int) string {
 	return sb.String()
 }
 
-// callerLocation returns the file and line number of the caller at the specified skip level.
-func callerLocation(skip int) (string, int) {
-	_, file, line, ok := runtime.Caller(skip)
-	if !ok {
-		return "", 0
-	}
-	return file, line
-}
-
 func (d *Dumper) writeDump(tw *tabwriter.Writer, vs ...any) {
 	referenceMap = map[uintptr]int{} // reset each time
 	visited := map[uintptr]bool{}
