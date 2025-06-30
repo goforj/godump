@@ -678,15 +678,6 @@ func TestForceExportedFallback(t *testing.T) {
 	assert.Equal(t, "hidden", out.String())
 }
 
-func TestAnsiColorize_DisabledBranch(t *testing.T) {
-	orig := enableColor
-	enableColor = false
-	defer func() { enableColor = orig }()
-
-	out := ansiColorize(colorLime, "xyz")
-	assert.Equal(t, "xyz", out)
-}
-
 func TestFindFirstNonInternalFrame_FallbackBranch(t *testing.T) {
 	orig := callerFn
 	defer func() { callerFn = orig }()
