@@ -427,7 +427,7 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 		d.printValue(tw, v.Elem(), indent, visited)
 	case reflect.Struct:
 		t := v.Type()
-		fmt.Fprintf(tw, "%s ", colorize(colorGray, "#"+t.String()))
+		fmt.Fprintf(tw, "%s {", colorize(colorGray, "#"+t.String()))
 		fmt.Fprintln(tw)
 
 		for i := range t.NumField() {

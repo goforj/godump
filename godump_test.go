@@ -114,8 +114,8 @@ func TestEmbeddedAnonymousStruct(t *testing.T) {
 
 	out := stripANSI(DumpStr(Derived{Base: Base{ID: 456}, Name: "Test"}))
 
-	assert.Contains(t, out, `#godump.Derived 
-  +Base => #godump.Base 
+	assert.Contains(t, out, `#godump.Derived {
+  +Base => #godump.Base {
     +ID => 456
   }
   +Name => "Test"
