@@ -15,16 +15,14 @@ import (
 )
 
 const (
-	colorReset   = "\033[0m"
-	colorGray    = "\033[90m"
-	colorYellow  = "\033[33m"
-	colorLime    = "\033[38;5;113m"
-	colorCyan    = "\033[38;5;38m"
-	colorNote    = "\033[38;5;38m"
-	colorRef     = "\033[38;5;247m"
-	colorMeta    = "\033[38;5;170m"
-	colorDefault = "\033[38;5;208m"
-	indentWidth  = 2
+	colorReset  = "\033[0m"
+	colorGray   = "\033[90m"
+	colorYellow = "\033[93m"
+	colorLime   = "\033[92m"
+	colorCyan   = "\033[96m"
+	colorRef    = "\033[94m"
+	colorMeta   = "\033[95m"
+	indentWidth = 2
 )
 
 // Default configuration values for the Dumper.
@@ -62,13 +60,11 @@ func ansiColorize(code, str string) string {
 
 // htmlColorMap maps color codes to HTML colors.
 var htmlColorMap = map[string]string{
-	colorGray:    "#999",
-	colorYellow:  "#ffb400",
-	colorLime:    "#80ff80",
-	colorNote:    "#40c0ff",
-	colorRef:     "#aaa",
-	colorMeta:    "#d087d0",
-	colorDefault: "#ff7f00",
+	colorGray:   "#999",
+	colorYellow: "#ffb400",
+	colorLime:   "#80ff80",
+	colorRef:    "#aaa",
+	colorMeta:   "#d087d0",
 }
 
 // htmlColorize colorizes the string using HTML span tags.
