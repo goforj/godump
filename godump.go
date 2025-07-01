@@ -29,9 +29,11 @@ const (
 
 // Default configuration values for the Dumper.
 const (
-	defaultMaxDepth     = 15
-	defaultMaxItems     = 100
-	defaultMaxStringLen = 100000
+	defaultMaxDepth      = 15
+	defaultMaxItems      = 100
+	defaultMaxStringLen  = 100000
+	defaultMaxStackDepth = 10
+	initialCallerSkip    = 2
 )
 
 // defaultDumper is the default Dumper instance used by Dump and DumpStr functions.
@@ -79,10 +81,11 @@ func htmlColorize(code, str string) string {
 // Dumper holds configuration for dumping structured data.
 // It controls depth, item count, and string length limits.
 type Dumper struct {
-	maxDepth     int
-	maxItems     int
-	maxStringLen int
-	writer       io.Writer
+	maxDepth           int
+	maxItems           int
+	maxStringLen       int
+	writer             io.Writer
+	skippedStackFrames int
 }
 
 // Option defines a functional option for configuring a Dumper.
@@ -129,6 +132,19 @@ func WithWriter(w io.Writer) Option {
 	}
 }
 
+// WithSkipStackFrames allows users to skip additional stack frames
+// on top of the frames that godump already skips internally.
+// This is useful when godump is wrapped in other functions or utilities,
+// and the actual call site is deeper in the stack.
+func WithSkipStackFrames(n int) Option {
+	return func(d *Dumper) *Dumper {
+		if n >= 0 {
+			d.skippedStackFrames = n
+		}
+		return d
+	}
+}
+
 // NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
 func NewDumper(opts ...Option) *Dumper {
@@ -151,7 +167,7 @@ func Dump(vs ...any) {
 
 // Dump prints the values to stdout with colorized output.
 func (d *Dumper) Dump(vs ...any) {
-	printDumpHeader(d.writer, 3)
+	printDumpHeader(d.writer, d.skippedStackFrames)
 	tw := tabwriter.NewWriter(d.writer, 0, 0, 1, ' ', 0)
 	d.writeDump(tw, vs...)
 	tw.Flush()
@@ -170,7 +186,7 @@ func DumpStr(vs ...any) string {
 // DumpStr returns a string representation of the values with colorized output.
 func (d *Dumper) DumpStr(vs ...any) string {
 	var sb strings.Builder
-	printDumpHeader(&sb, 3)
+	printDumpHeader(&sb, d.skippedStackFrames)
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 	d.writeDump(tw, vs...)
 	tw.Flush()
@@ -225,7 +241,7 @@ func (d *Dumper) DumpHTML(vs ...any) string {
 	sb.WriteString(`<body style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
 
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	printDumpHeader(&sb, 3)
+	printDumpHeader(&sb, d.skippedStackFrames)
 	d.writeDump(tw, vs...)
 	tw.Flush()
 
@@ -258,7 +274,7 @@ func (d *Dumper) Dd(vs ...any) {
 
 // printDumpHeader prints the header for the dump output, including the file and line number.
 func printDumpHeader(out io.Writer, skip int) {
-	file, line := findFirstNonInternalFrame()
+	file, line := findFirstNonInternalFrame(skip)
 	if file == "" {
 		return
 	}
@@ -278,14 +294,19 @@ func printDumpHeader(out io.Writer, skip int) {
 var callerFn = runtime.Caller
 
 // findFirstNonInternalFrame iterates through the call stack to find the first non-internal frame.
-func findFirstNonInternalFrame() (string, int) {
-	for i := 2; i < 10; i++ {
+func findFirstNonInternalFrame(skip int) (string, int) {
+	for i := initialCallerSkip; i < defaultMaxStackDepth; i++ {
 		pc, file, line, ok := callerFn(i)
 		if !ok {
 			break
 		}
 		fn := runtime.FuncForPC(pc)
-		if fn == nil || !strings.Contains(fn.Name(), "godump") {
+		if fn == nil || !strings.Contains(fn.Name(), "godump") || strings.HasSuffix(file, "_test.go") {
+			if skip > 0 {
+				skip--
+				continue
+			}
+
 			return file, line
 		}
 	}

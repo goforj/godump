@@ -227,7 +227,7 @@ func TestUnreadableFallback(t *testing.T) {
 
 func TestFindFirstNonInternalFrameFallback(t *testing.T) {
 	// Trigger the fallback by skipping deeper
-	file, line := findFirstNonInternalFrame()
+	file, line := findFirstNonInternalFrame(0)
 	// We can't assert much here reliably, but calling it adds coverage
 	assert.True(t, len(file) >= 0)
 	assert.True(t, line >= 0)
@@ -722,7 +722,7 @@ func TestFindFirstNonInternalFrame_FallbackBranch(t *testing.T) {
 		return 0, "", 0, false
 	}
 
-	file, line := findFirstNonInternalFrame()
+	file, line := findFirstNonInternalFrame(0)
 	assert.Equal(t, "", file)
 	assert.Equal(t, 0, line)
 }
@@ -889,6 +889,36 @@ func TestDumpWithCustomWriter(t *testing.T) {
 	if !strings.Contains(out, "<#dump //") {
 		t.Errorf("expected dump header with file and line, got: %s", out)
 	}
+}
+
+func wrappedDumpStr(skip int, v any) string {
+	return NewDumper(WithSkipStackFrames(skip)).DumpStr(v)
+}
+
+func TestDumpWithCustomSkipStackFrames(t *testing.T) {
+	// caller stack frames are
+	//	1	godump.go           github.com/goforj/godump.findFirstNonInternalFrame			skip by initialCallerSkip
+	//	2	godump.go           github.com/goforj/godump.printDumpHeader					skip by initialCallerSkip
+	//	3	godump.go           github.com/goforj/godump.(*Dumper).DumpStr					skip by fail names contain godump.go
+	//	4	godump_test.go      github.com/goforj/godump.TestDumpWithCustomSkipStackFrames
+	//	5	testing.go          testing.tRunner
+	out := NewDumper().DumpStr("test")
+	assert.Contains(t, out, "godump_test.go")
+
+	out = NewDumper(WithSkipStackFrames(1)).DumpStr("test")
+	assert.NotContains(t, out, "godump_test.go")
+
+	// skip=0: should print the original DumpStr call site
+	out = wrappedDumpStr(0, "test")
+	assert.Contains(t, out, "godump_test.go")
+
+	// skip=1: should print the location inside wrappedDumpStr
+	out = wrappedDumpStr(1, "test")
+	assert.Contains(t, out, "godump_test.go")
+
+	// skip=2: should skip current file and show the outermost frame
+	out = wrappedDumpStr(2, "test")
+	assert.NotContains(t, out, "godump_test.go")
 }
 
 // TestHexDumpRendering checks that the hex dump output is rendered correctly.
