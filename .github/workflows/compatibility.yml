@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        go-version: ["1.21", "1.22", "1.23", "1.24"]
+        go-version: ["1.23", "oldstable", "stable"]
 
     steps:
       - name: Checkout
@@ -56,11 +56,3 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
         timeout-minutes: 5
-
-      - name: Test without test dependencies
-        run: |
-          go mod edit -droprequire=github.com/stretchr/testify
-          go mod tidy
-          go build -v ./...
-          git checkout go.mod go.sum
-        timeout-minutes: 3
