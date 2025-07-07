@@ -8,7 +8,6 @@ import (
 	"os"
 	"reflect"
 	"regexp"
-	"runtime"
 	"strings"
 	"testing"
 	"text/tabwriter"
@@ -19,6 +18,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+func newDumperT(t *testing.T, opts ...Option) *Dumper {
+	t.Helper()
+
+	return NewDumper(opts...)
+}
 
 // stripANSI removes ANSI color codes for testable output.
 func stripANSI(s string) string {
@@ -215,7 +220,7 @@ func TestUnreadableFallback(t *testing.T) {
 
 func TestFindFirstNonInternalFrameFallback(t *testing.T) {
 	// Trigger the fallback by skipping deeper
-	file, line := findFirstNonInternalFrame(0)
+	file, line := newDumperT(t).findFirstNonInternalFrame(0)
 	// We can't assert much here reliably, but calling it adds coverage
 	assert.True(t, len(file) >= 0)
 	assert.True(t, line >= 0)
@@ -668,15 +673,13 @@ func TestForceExportedFallback(t *testing.T) {
 }
 
 func TestFindFirstNonInternalFrame_FallbackBranch(t *testing.T) {
-	orig := callerFn
-	defer func() { callerFn = orig }()
-
+	testDumper := newDumperT(t)
 	// Always fail to simulate 10 bad frames
-	callerFn = func(i int) (uintptr, string, int, bool) {
+	testDumper.callerFn = func(int) (uintptr, string, int, bool) {
 		return 0, "", 0, false
 	}
 
-	file, line := findFirstNonInternalFrame(0)
+	file, line := testDumper.findFirstNonInternalFrame(0)
 	assert.Equal(t, "", file)
 	assert.Equal(t, 0, line)
 }
@@ -691,19 +694,15 @@ func TestForceExported_NoInterfaceNoAddr(t *testing.T) {
 }
 
 func TestPrintDumpHeader_SkipWhenNoFrame(t *testing.T) {
-	orig := callerFn
-	defer func() { callerFn = orig }()
-
-	callerFn = func(skip int) (uintptr, string, int, bool) {
+	testDumper := newDumperT(t)
+	testDumper.callerFn = func(int) (uintptr, string, int, bool) {
 		return 0, "", 0, false
 	}
 
 	var b strings.Builder
-	printDumpHeader(&b, 3)
+	testDumper.printDumpHeader(&b)
 	assert.Equal(t, "", b.String()) // nothing should be written
 }
-
-var runtimeCaller = runtime.Caller
 
 type customChan chan int
 

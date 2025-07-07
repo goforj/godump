@@ -86,6 +86,10 @@ type Dumper struct {
 	maxStringLen       int
 	writer             io.Writer
 	skippedStackFrames int
+
+	// callerFn is used to get the caller information.
+	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
+	callerFn func(skip int) (uintptr, string, int, bool)
 }
 
 // Option defines a functional option for configuring a Dumper.
@@ -153,6 +157,7 @@ func NewDumper(opts ...Option) *Dumper {
 		maxItems:     defaultMaxItems,
 		maxStringLen: defaultMaxStringLen,
 		writer:       os.Stdout,
+		callerFn:     runtime.Caller,
 	}
 	for _, opt := range opts {
 		d = opt(d)
@@ -167,7 +172,7 @@ func Dump(vs ...any) {
 
 // Dump prints the values to stdout with colorized output.
 func (d *Dumper) Dump(vs ...any) {
-	printDumpHeader(d.writer, d.skippedStackFrames)
+	d.printDumpHeader(d.writer)
 	tw := tabwriter.NewWriter(d.writer, 0, 0, 1, ' ', 0)
 	d.writeDump(tw, vs...)
 	tw.Flush()
@@ -186,7 +191,7 @@ func DumpStr(vs ...any) string {
 // DumpStr returns a string representation of the values with colorized output.
 func (d *Dumper) DumpStr(vs ...any) string {
 	var sb strings.Builder
-	printDumpHeader(&sb, d.skippedStackFrames)
+	d.printDumpHeader(&sb)
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 	d.writeDump(tw, vs...)
 	tw.Flush()
@@ -241,7 +246,7 @@ func (d *Dumper) DumpHTML(vs ...any) string {
 	sb.WriteString(`<div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
 
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	printDumpHeader(&sb, d.skippedStackFrames)
+	d.printDumpHeader(&sb)
 	d.writeDump(tw, vs...)
 	tw.Flush()
 
@@ -273,8 +278,8 @@ func (d *Dumper) Dd(vs ...any) {
 }
 
 // printDumpHeader prints the header for the dump output, including the file and line number.
-func printDumpHeader(out io.Writer, skip int) {
-	file, line := findFirstNonInternalFrame(skip)
+func (d *Dumper) printDumpHeader(out io.Writer) {
+	file, line := d.findFirstNonInternalFrame(d.skippedStackFrames)
 	if file == "" {
 		return
 	}
@@ -290,13 +295,10 @@ func printDumpHeader(out io.Writer, skip int) {
 	fmt.Fprintln(out, colorize(colorGray, header))
 }
 
-// findFirstNonInternalFrame finds the first non-internal frame in the call stack.
-var callerFn = runtime.Caller
-
 // findFirstNonInternalFrame iterates through the call stack to find the first non-internal frame.
-func findFirstNonInternalFrame(skip int) (string, int) {
+func (d *Dumper) findFirstNonInternalFrame(skip int) (string, int) {
 	for i := initialCallerSkip; i < defaultMaxStackDepth; i++ {
-		pc, file, line, ok := callerFn(i)
+		pc, file, line, ok := d.callerFn(i)
 		if !ok {
 			break
 		}
