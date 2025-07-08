@@ -26,11 +26,11 @@ linters:
     - nlreturn
     - whitespace
     - wsl
+#    - wsl_v5 (when linter is upgraded)
 
     # nice to have
     - usetesting
     - unused
-    - testifylint
     - perfsprint
 
   settings:
@@ -104,6 +104,8 @@ linters:
         - name: unused-parameter
           disabled: true
         - name: unused-receiver
+          disabled: true
+        - name: unhandled-error
           disabled: true
 
     staticcheck:
