@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"reflect"
-	"regexp"
 	"strings"
 	"testing"
 	"text/tabwriter"
@@ -22,13 +21,17 @@ import (
 func newDumperT(t *testing.T, opts ...Option) *Dumper {
 	t.Helper()
 
-	return NewDumper(opts...)
+	d := NewDumper(opts...)
+	// we enforce no color in tests to avoid terminal issues
+	d.colorizer = colorizeUnstyled
+
+	return d
 }
 
-// stripANSI removes ANSI color codes for testable output.
-func stripANSI(s string) string {
-	re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
-	return re.ReplaceAllString(s, "")
+func dumpStrT(t *testing.T, v ...any) string {
+	t.Helper()
+
+	return newDumperT(t).DumpStr(v...)
 }
 
 func TestSimpleStruct(t *testing.T) {
@@ -42,7 +45,7 @@ func TestSimpleStruct(t *testing.T) {
 	}
 
 	user := User{Name: "Alice", Profile: Profile{Age: 30, Email: "alice@example.com"}}
-	out := stripANSI(DumpStr(user))
+	out := dumpStrT(t, user)
 
 	assert.Contains(t, out, "#godump.User")
 	assert.Contains(t, out, "+Name")
@@ -57,7 +60,7 @@ func TestSimpleStruct(t *testing.T) {
 
 func TestNilPointer(t *testing.T) {
 	var s *string
-	out := stripANSI(DumpStr(s))
+	out := dumpStrT(t, s)
 	assert.Contains(t, out, "(nil)")
 }
 
@@ -67,7 +70,7 @@ func TestCycleReference(t *testing.T) {
 	}
 	n := &Node{}
 	n.Next = n
-	out := stripANSI(DumpStr(n))
+	out := dumpStrT(t, n)
 	assert.Contains(t, out, "↩︎ &1")
 }
 
@@ -81,13 +84,13 @@ func TestMaxDepth(t *testing.T) {
 		curr.Child = &Node{}
 		curr = curr.Child
 	}
-	out := stripANSI(DumpStr(n))
+	out := dumpStrT(t, n)
 	assert.Contains(t, out, "... (max depth)")
 }
 
 func TestMapOutput(t *testing.T) {
 	m := map[string]int{"a": 1, "b": 2}
-	out := stripANSI(DumpStr(m))
+	out := dumpStrT(t, m)
 
 	assert.Contains(t, out, "a => 1")
 	assert.Contains(t, out, "b => 2")
@@ -95,14 +98,14 @@ func TestMapOutput(t *testing.T) {
 
 func TestSliceOutput(t *testing.T) {
 	s := []string{"one", "two"}
-	out := stripANSI(DumpStr(s))
+	out := dumpStrT(t, s)
 
 	assert.Contains(t, out, "0 => \"one\"")
 	assert.Contains(t, out, "1 => \"two\"")
 }
 
 func TestAnonymousStruct(t *testing.T) {
-	out := stripANSI(DumpStr(struct{ ID int }{ID: 123}))
+	out := dumpStrT(t, struct{ ID int }{ID: 123})
 
 	assert.Contains(t, out, "+ID")
 	assert.Contains(t, out, "123")
@@ -117,7 +120,7 @@ func TestEmbeddedAnonymousStruct(t *testing.T) {
 		Name string
 	}
 
-	out := stripANSI(DumpStr(Derived{Base: Base{ID: 456}, Name: "Test"}))
+	out := dumpStrT(t, Derived{Base: Base{ID: 456}, Name: "Test"})
 
 	assert.Contains(t, out, `#godump.Derived {
   +Base => #godump.Base {
@@ -129,14 +132,14 @@ func TestEmbeddedAnonymousStruct(t *testing.T) {
 
 func TestControlCharsEscaped(t *testing.T) {
 	s := "line1\nline2\tok"
-	out := stripANSI(DumpStr(s))
+	out := dumpStrT(t, s)
 	assert.Contains(t, out, `\n`)
 	assert.Contains(t, out, `\t`)
 }
 
 func TestFuncPlaceholder(t *testing.T) {
 	fn := func() {}
-	out := stripANSI(DumpStr(fn))
+	out := dumpStrT(t, fn)
 	assert.Contains(t, out, "func()")
 }
 
@@ -144,15 +147,15 @@ func TestSpecialTypes(t *testing.T) {
 	type Unsafe struct {
 		Ptr unsafe.Pointer
 	}
-	out := stripANSI(DumpStr(Unsafe{}))
+	out := dumpStrT(t, Unsafe{})
 	assert.Contains(t, out, "unsafe.Pointer(")
 
 	c := make(chan int)
-	out = stripANSI(DumpStr(c))
+	out = dumpStrT(t, c)
 	assert.Contains(t, out, "chan")
 
 	complexNum := complex(1.1, 2.2)
-	out = stripANSI(DumpStr(complexNum))
+	out = dumpStrT(t, complexNum)
 	assert.Contains(t, out, "(1.1+2.2i)")
 }
 
@@ -184,22 +187,31 @@ func TestForceExported(t *testing.T) {
 func TestDetectColorVariants(t *testing.T) {
 	t.Run("no environment variables", func(t *testing.T) {
 		assert.True(t, detectColor())
+
+		out := NewDumper().colorize(colorYellow, "test")
+		assert.Equal(t, "\x1b[33mtest\x1b[0m", out)
 	})
 
 	t.Run("forcing no color", func(t *testing.T) {
 		t.Setenv("NO_COLOR", "1")
 		assert.False(t, detectColor())
+
+		out := NewDumper().colorize(colorYellow, "test")
+		assert.Equal(t, "test", out)
 	})
 
 	t.Run("forcing color", func(t *testing.T) {
 		t.Setenv("FORCE_COLOR", "1")
 		assert.True(t, detectColor())
+
+		out := NewDumper().colorize(colorYellow, "test")
+		assert.Equal(t, "\x1b[33mtest\x1b[0m", out)
 	})
 }
 
 func TestHtmlColorizeUnknown(t *testing.T) {
 	// Color not in htmlColorMap
-	out := htmlColorize("\033[999m", "test")
+	out := colorizeHTML("\033[999m", "test")
 	assert.Contains(t, out, `<span style="color:`)
 	assert.Contains(t, out, "test")
 }
@@ -211,10 +223,10 @@ func TestUnreadableFallback(t *testing.T) {
 	var ch chan int // nil typed value, not interface
 	rv := reflect.ValueOf(ch)
 
-	defaultDumper.printValue(tw, rv, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, rv, 0, map[uintptr]bool{})
 	tw.Flush()
 
-	output := stripANSI(b.String())
+	output := b.String()
 	assert.Contains(t, output, "(nil)")
 }
 
@@ -231,21 +243,21 @@ func TestUnreadableFieldFallback(t *testing.T) {
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 
-	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
-	out := stripANSI(sb.String())
+	out := sb.String()
 	assert.Contains(t, out, "<invalid>")
 }
 
 func TestTimeType(t *testing.T) {
 	now := time.Now()
-	out := stripANSI(DumpStr(now))
+	out := dumpStrT(t, now)
 	assert.Contains(t, out, "#time.Time")
 }
 
 func TestPrimitiveTypes(t *testing.T) {
-	out := stripANSI(DumpStr(
+	out := dumpStrT(t,
 		int8(1),
 		int16(2),
 		uint8(3),
@@ -254,7 +266,7 @@ func TestPrimitiveTypes(t *testing.T) {
 		float32(1.5),
 		[2]int{6, 7},
 		any(42),
-	))
+	)
 
 	assert.Contains(t, out, "1")        // int8
 	assert.Contains(t, out, "2")        // int16
@@ -284,7 +296,7 @@ func TestDefaultFallback_Unreadable(t *testing.T) {
 
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "<invalid>")
@@ -295,7 +307,7 @@ func TestPrintValue_Uintptr(t *testing.T) {
 	val := uintptr(12345)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	defaultDumper.printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "12345")
@@ -307,7 +319,7 @@ func TestPrintValue_UnsafePointer(t *testing.T) {
 	up := unsafe.Pointer(&i)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	defaultDumper.printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "unsafe.Pointer")
@@ -317,7 +329,7 @@ func TestPrintValue_Func(t *testing.T) {
 	fn := func() {}
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	defaultDumper.printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "func()")
@@ -334,7 +346,7 @@ func TestMaxDepthTruncation(t *testing.T) {
 		curr = curr.Next
 	}
 
-	out := stripANSI(DumpStr(root))
+	out := dumpStrT(t, root)
 	assert.Contains(t, out, "... (max depth)")
 }
 
@@ -349,13 +361,13 @@ func TestCustomMaxDepthTruncation(t *testing.T) {
 		curr = curr.Next
 	}
 
-	out := stripANSI(NewDumper(WithMaxDepth(2)).DumpStr(root))
+	out := newDumperT(t, WithMaxDepth(2)).DumpStr(root)
 	assert.Contains(t, out, "... (max depth)")
 
-	out = stripANSI(NewDumper(WithMaxDepth(0)).DumpStr(root))
+	out = newDumperT(t, WithMaxDepth(0)).DumpStr(root)
 	assert.Contains(t, out, "... (max depth)")
 
-	out = stripANSI(NewDumper(WithMaxDepth(-1)).DumpStr(root))
+	out = newDumperT(t, WithMaxDepth(-1)).DumpStr(root)
 	assert.NotContains(t, out, "... (max depth)")
 }
 
@@ -364,35 +376,33 @@ func TestMapTruncation(t *testing.T) {
 	for i := range 200 {
 		largeMap[i] = i
 	}
-	out := stripANSI(DumpStr(largeMap))
+	out := dumpStrT(t, largeMap)
 	assert.Contains(t, out, "... (truncated)")
 }
 
 func TestNilInterfaceTypePrint(t *testing.T) {
 	var x any = (*int)(nil)
-	out := stripANSI(DumpStr(x))
+	out := dumpStrT(t, x)
 	assert.Contains(t, out, "(nil)")
 }
 
 func TestUnreadableDefaultBranch(t *testing.T) {
 	v := reflect.Value{}
-	out := stripANSI(DumpStr(v))
+	out := dumpStrT(t, v)
 	assert.Contains(t, out, "#reflect.Value") // new expected fallback
 }
 
 func TestNilChan(t *testing.T) {
 	var ch chan int
-	out := DumpStr(ch)
-	// Strip ANSI codes before checking
-	clean := stripANSI(out)
-	if !strings.Contains(clean, "chan int(nil)") {
-		t.Errorf("Expected nil chan representation, got: %q", clean)
+	out := dumpStrT(t, ch)
+	if !strings.Contains(out, "chan int(nil)") {
+		t.Errorf("Expected nil chan representation, got: %q", out)
 	}
 }
 
 func TestTruncatedSlice(t *testing.T) {
 	slice := make([]int, 101)
-	out := DumpStr(slice)
+	out := dumpStrT(t, slice)
 	if !strings.Contains(out, "... (truncated)") {
 		t.Error("Expected slice to be truncated")
 	}
@@ -400,17 +410,17 @@ func TestTruncatedSlice(t *testing.T) {
 
 func TestCustomTruncatedSlice(t *testing.T) {
 	slice := make([]int, 3)
-	out := NewDumper(WithMaxItems(2)).DumpStr(slice)
+	out := newDumperT(t, WithMaxItems(2)).DumpStr(slice)
 	if !strings.Contains(out, "... (truncated)") {
 		t.Error("Expected slice to be truncated")
 	}
 
-	out = NewDumper(WithMaxItems(0)).DumpStr(slice)
+	out = newDumperT(t, WithMaxItems(0)).DumpStr(slice)
 	if !strings.Contains(out, "... (truncated)") {
 		t.Error("Expected slice to be truncated")
 	}
 
-	out = NewDumper(WithMaxItems(-1)).DumpStr(slice)
+	out = newDumperT(t, WithMaxItems(-1)).DumpStr(slice)
 	if strings.Contains(out, "... (truncated)") {
 		t.Error("Negative MaxItems option should not be applied")
 	}
@@ -418,7 +428,7 @@ func TestCustomTruncatedSlice(t *testing.T) {
 
 func TestTruncatedString(t *testing.T) {
 	s := strings.Repeat("x", 100001)
-	out := DumpStr(s)
+	out := dumpStrT(t, s)
 	if !strings.Contains(out, "…") {
 		t.Error("Expected long string to be truncated")
 	}
@@ -426,24 +436,24 @@ func TestTruncatedString(t *testing.T) {
 
 func TestCustomTruncatedString(t *testing.T) {
 	s := strings.Repeat("x", 10)
-	out := NewDumper(WithMaxStringLen(9)).DumpStr(s)
+	out := newDumperT(t, WithMaxStringLen(9)).DumpStr(s)
 	if !strings.Contains(out, "…") {
 		t.Error("Expected long string to be truncated")
 	}
 
-	out = NewDumper(WithMaxStringLen(0)).DumpStr(s)
+	out = newDumperT(t, WithMaxStringLen(0)).DumpStr(s)
 	if !strings.Contains(out, "…") {
 		t.Error("Expected long string to be truncated")
 	}
 
-	out = NewDumper(WithMaxStringLen(-1)).DumpStr(s)
+	out = newDumperT(t, WithMaxStringLen(-1)).DumpStr(s)
 	if strings.Contains(out, "…") {
 		t.Error("Negative MaxStringLen option should not be applied")
 	}
 }
 
 func TestBoolValues(t *testing.T) {
-	out := DumpStr(true, false)
+	out := dumpStrT(t, true, false)
 	if !strings.Contains(out, "true") || !strings.Contains(out, "false") {
 		t.Error("Expected bools to be printed")
 	}
@@ -453,7 +463,7 @@ func TestDefaultBranchFallback(t *testing.T) {
 	var v reflect.Value // zero reflect.Value
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 	if !strings.Contains(sb.String(), "<invalid>") {
 		t.Error("Expected default fallback for invalid reflect.Value")
@@ -469,7 +479,7 @@ func (b *BadStringer) String() string {
 func TestSafeStringerCall(t *testing.T) {
 	var s fmt.Stringer = (*BadStringer)(nil) // nil pointer implementing Stringer
 
-	out := stripANSI(DumpStr(s))
+	out := dumpStrT(t, s)
 
 	assert.Contains(t, out, "(nil)")
 	assert.NotContains(t, out, "should never be called") // ensure String() wasn't called
@@ -543,7 +553,7 @@ func TestPanicOnVisibleFieldsIndexMismatch(t *testing.T) {
 
 	// This will panic with:
 	// panic: reflect: Field index out of bounds
-	_ = DumpStr(Outer{
+	_ = dumpStrT(t, Outer{
 		Embedded: Embedded{Secret: "classified"},
 		Age:      42,
 	})
@@ -624,7 +634,7 @@ func TestTheKitchenSink(t *testing.T) {
 
 	Dump(val)
 
-	out := stripANSI(DumpStr(val))
+	out := dumpStrT(t, val)
 
 	// Minimal coverage assertions
 	assert.Contains(t, out, "+String")
@@ -654,15 +664,6 @@ func TestTheKitchenSink(t *testing.T) {
 	assert.Contains(t, out, "#")          // loosest
 	assert.Contains(t, out, "Everything") // middle-ground
 
-}
-
-func TestAnsiColorize_Disabled(t *testing.T) {
-	orig := enableColor
-	enableColor = false
-	defer func() { enableColor = orig }()
-
-	out := ansiColorize(colorYellow, "test")
-	assert.Equal(t, "test", out)
 }
 
 func TestForceExportedFallback(t *testing.T) {
@@ -716,11 +717,10 @@ func TestPrintValue_ChanNilBranch_Hardforce(t *testing.T) {
 	assert.True(t, v.IsNil())
 	assert.Equal(t, reflect.Chan, v.Kind())
 
-	defaultDumper.printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
 	tw.Flush()
 
-	out := stripANSI(buf.String())
-	assert.Contains(t, out, "customChan(nil)")
+	assert.Contains(t, buf.String(), "customChan(nil)")
 }
 
 type secretString string
@@ -738,7 +738,8 @@ func TestAsStringer_ForceExported(t *testing.T) {
 	v := reflect.ValueOf(h).Elem().FieldByName("secret") // now v.CanAddr() is true, but v.CanInterface() is false
 
 	assert.False(t, v.CanInterface(), "field must not be interfaceable")
-	str := asStringer(v)
+
+	str := newDumperT(t).asStringer(v)
 
 	assert.Contains(t, str, "👻 hidden stringer")
 }
@@ -864,9 +865,7 @@ func TestDumpWithCustomSkipStackFrames(t *testing.T) {
 // TestHexDumpRendering checks that the hex dump output is rendered correctly.
 func TestHexDumpRendering(t *testing.T) {
 	input := []byte(`{"error":"kek","last_error":"not implemented","lol":"ok"}`)
-	output := DumpStr(input)
-	output = stripANSI(output)
-	Dump(input)
+	output := dumpStrT(t, input)
 
 	if !strings.Contains(output, "7b 22 65 72 72 6f 72") {
 		t.Error("expected hex dump output missing")
@@ -928,7 +927,7 @@ func TestIndirectionNilPointer(t *testing.T) {
 	}
 
 	// Check that the output does not contain dereferenced nil pointer
-	out := stripANSI(DumpStr(ts))
+	out := dumpStrT(t, ts)
 	assert.Contains(t, out, "+Name")
 	assert.Contains(t, out, "John")
 	assert.Contains(t, out, "+Embedded => *godump.Embedded(nil)")
@@ -1021,11 +1020,8 @@ func TestDumpJSON(t *testing.T) {
 	})
 
 	t.Run("DumpJSON prints valid JSON to stdout for multiple values", func(t *testing.T) {
-		// Save and override defaultDumper temporarily
-		orig := defaultDumper
-
 		r, w, _ := os.Pipe()
-		defaultDumper = NewDumper(WithWriter(w))
+		testDumper := newDumperT(t, WithWriter(w))
 
 		// Read from pipe in goroutine
 		done := make(chan string)
@@ -1036,10 +1032,9 @@ func TestDumpJSON(t *testing.T) {
 		}()
 
 		// Perform the dump
-		DumpJSON("foo", 123, true)
+		testDumper.DumpJSON("foo", 123, true)
 
 		_ = w.Close()
-		defaultDumper = orig // restore original dumper
 
 		output := <-done
 		output = strings.TrimSpace(output)
