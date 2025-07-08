@@ -43,7 +43,6 @@ var defaultDumper = NewDumper()
 var exitFunc = os.Exit
 
 var (
-	enableColor  = detectColor()
 	nextRefID    = 1
 	referenceMap = map[uintptr]int{}
 )
@@ -51,14 +50,17 @@ var (
 // Colorizer is a function type that takes a color code and a string, returning the colorized string.
 type Colorizer func(code, str string) string
 
-// colorize is the default colorizer function.
-var colorize Colorizer = ansiColorize // default
+// colorizeUnstyled returns the string without any colorization.
+//
+// It satisfies the [Colorizer] interface.
+func colorizeUnstyled(code, str string) string {
+	return str // No colorization
+}
 
-// ansiColorize colorizes the string using ANSI escape codes.
-func ansiColorize(code, str string) string {
-	if !enableColor {
-		return str
-	}
+// colorizeANSI colorizes the string using ANSI escape codes.
+//
+// It satisfies the [Colorizer] interface.
+func colorizeANSI(code, str string) string {
 	return code + str + colorReset
 }
 
@@ -73,8 +75,10 @@ var htmlColorMap = map[string]string{
 	colorDefault: "#ff7f00",
 }
 
-// htmlColorize colorizes the string using HTML span tags.
-func htmlColorize(code, str string) string {
+// colorizeHTML colorizes the string using HTML span tags.
+//
+// It satisfies the [Colorizer] interface.
+func colorizeHTML(code, str string) string {
 	return fmt.Sprintf(`<span style="color:%s">%s</span>`, htmlColorMap[code], str)
 }
 
@@ -90,6 +94,9 @@ type Dumper struct {
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
 	callerFn func(skip int) (uintptr, string, int, bool)
+
+	// colorizer is used to apply color formatting to the output.
+	colorizer Colorizer
 }
 
 // Option defines a functional option for configuring a Dumper.
@@ -157,6 +164,7 @@ func NewDumper(opts ...Option) *Dumper {
 		maxItems:     defaultMaxItems,
 		maxStringLen: defaultMaxStringLen,
 		writer:       os.Stdout,
+		colorizer:    nil, // ensure no detection is made if we don't need it
 		callerFn:     runtime.Caller,
 	}
 	for _, opt := range opts {
@@ -172,10 +180,7 @@ func Dump(vs ...any) {
 
 // Dump prints the values to stdout with colorized output.
 func (d *Dumper) Dump(vs ...any) {
-	d.printDumpHeader(d.writer)
-	tw := tabwriter.NewWriter(d.writer, 0, 0, 1, ' ', 0)
-	d.writeDump(tw, vs...)
-	tw.Flush()
+	fmt.Fprint(d.writer, d.DumpStr(vs...))
 }
 
 // Fdump writes the formatted dump of values to the given io.Writer.
@@ -231,24 +236,13 @@ func DumpHTML(vs ...any) string {
 
 // DumpHTML dumps the values as HTML with colorized output.
 func (d *Dumper) DumpHTML(vs ...any) string {
-	prevColorize := colorize
-	prevEnable := enableColor
-	defer func() {
-		colorize = prevColorize
-		enableColor = prevEnable
-	}()
-
-	// Enable HTML coloring
-	colorize = htmlColorize
-	enableColor = true
-
 	var sb strings.Builder
 	sb.WriteString(`<div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
 
-	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	d.printDumpHeader(&sb)
-	d.writeDump(tw, vs...)
-	tw.Flush()
+	htmlDumper := d.clone()
+	htmlDumper.colorizer = colorizeHTML // use HTML colorizer
+
+	sb.WriteString(htmlDumper.DumpStr(vs...))
 
 	sb.WriteString("</pre></div>")
 	return sb.String()
@@ -277,6 +271,22 @@ func (d *Dumper) Dd(vs ...any) {
 	exitFunc(1)
 }
 
+// clone creates a copy of the [Dumper] with the same configuration.
+// This is useful for creating a new dumper with the same settings without modifying the original.
+func (d *Dumper) clone() *Dumper {
+	var newDumper = *d
+	return &newDumper
+}
+
+// colorize applies the configured [Colorizer] to the string with the given color code.
+func (d *Dumper) colorize(code, str string) string {
+	if d.colorizer == nil {
+		// this avoids detecting color if not needed
+		d.colorizer = newColorizer()
+	}
+	return d.colorizer(code, str)
+}
+
 // printDumpHeader prints the header for the dump output, including the file and line number.
 func (d *Dumper) printDumpHeader(out io.Writer) {
 	file, line := d.findFirstNonInternalFrame(d.skippedStackFrames)
@@ -292,7 +302,7 @@ func (d *Dumper) printDumpHeader(out io.Writer) {
 	}
 
 	header := fmt.Sprintf("<#dump // %s:%d", relPath, line)
-	fmt.Fprintln(out, colorize(colorGray, header))
+	fmt.Fprintln(out, d.colorize(colorGray, header))
 }
 
 // findFirstNonInternalFrame iterates through the call stack to find the first non-internal frame.
@@ -316,7 +326,7 @@ func (d *Dumper) findFirstNonInternalFrame(skip int) (string, int) {
 }
 
 // formatByteSliceAsHexDump formats a byte slice as a hex dump with ASCII representation.
-func formatByteSliceAsHexDump(b []byte, indent int) string {
+func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 	var sb strings.Builder
 
 	const lineLen = 16
@@ -338,7 +348,7 @@ func formatByteSliceAsHexDump(b []byte, indent int) string {
 		// Offset
 		offsetStr := fmt.Sprintf("%08x  ", i)
 		sb.WriteString(bodyIndent)
-		sb.WriteString(colorize(colorMeta, offsetStr))
+		sb.WriteString(d.colorize(colorMeta, offsetStr))
 		visibleLen += len(offsetStr)
 
 		// Hex bytes
@@ -352,7 +362,7 @@ func formatByteSliceAsHexDump(b []byte, indent int) string {
 			if j == 7 {
 				hexStr += " "
 			}
-			sb.WriteString(colorize(colorCyan, hexStr))
+			sb.WriteString(d.colorize(colorCyan, hexStr))
 			visibleLen += len(hexStr)
 		}
 
@@ -361,20 +371,20 @@ func formatByteSliceAsHexDump(b []byte, indent int) string {
 		sb.WriteString(strings.Repeat(" ", padding))
 
 		// ASCII section
-		sb.WriteString(colorize(colorGray, "| "))
+		sb.WriteString(d.colorize(colorGray, "| "))
 		asciiCount := 0
 		for _, c := range line {
 			ch := "."
 			if c >= 32 && c <= 126 {
 				ch = string(c)
 			}
-			sb.WriteString(colorize(colorLime, ch))
+			sb.WriteString(d.colorize(colorLime, ch))
 			asciiCount++
 		}
 		if asciiCount < asciiMaxLen {
 			sb.WriteString(strings.Repeat(" ", asciiMaxLen-asciiCount))
 		}
-		sb.WriteString(colorize(colorGray, " |") + "\n")
+		sb.WriteString(d.colorize(colorGray, " |") + "\n")
 	}
 
 	// Closing
@@ -383,52 +393,52 @@ func formatByteSliceAsHexDump(b []byte, indent int) string {
 	return sb.String()
 }
 
-func (d *Dumper) writeDump(tw *tabwriter.Writer, vs ...any) {
+func (d *Dumper) writeDump(w io.Writer, vs ...any) {
 	referenceMap = map[uintptr]int{} // reset each time
 	visited := map[uintptr]bool{}
 	for _, v := range vs {
 		rv := reflect.ValueOf(v)
 		rv = makeAddressable(rv)
-		d.printValue(tw, rv, 0, visited)
-		fmt.Fprintln(tw)
+		d.printValue(w, rv, 0, visited)
+		fmt.Fprintln(w)
 	}
 }
 
-func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, visited map[uintptr]bool) {
+func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited map[uintptr]bool) {
 	if indent > d.maxDepth {
-		fmt.Fprint(tw, colorize(colorGray, "... (max depth)"))
+		fmt.Fprint(w, d.colorize(colorGray, "... (max depth)"))
 		return
 	}
 	if !v.IsValid() {
-		fmt.Fprint(tw, colorize(colorGray, "<invalid>"))
+		fmt.Fprint(w, d.colorize(colorGray, "<invalid>"))
 		return
 	}
 
-	if s := asStringer(v); s != "" {
-		fmt.Fprint(tw, s)
+	if s := d.asStringer(v); s != "" {
+		fmt.Fprint(w, s)
 		return
 	}
 
 	switch v.Kind() {
 	case reflect.Chan:
 		if v.IsNil() {
-			fmt.Fprint(tw, colorize(colorGray, v.Type().String()+"(nil)"))
+			fmt.Fprint(w, d.colorize(colorGray, v.Type().String()+"(nil)"))
 		} else {
-			fmt.Fprintf(tw, "%s(%s)", colorize(colorGray, v.Type().String()), colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
+			fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, v.Type().String()), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
 		}
 		return
 	}
 
 	if isNil(v) {
 		typeStr := v.Type().String()
-		fmt.Fprintf(tw, colorize(colorLime, typeStr)+colorize(colorGray, "(nil)"))
+		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
 		return
 	}
 
 	if v.Kind() == reflect.Ptr && v.CanAddr() {
 		ptr := v.Pointer()
 		if id, ok := referenceMap[ptr]; ok {
-			fmt.Fprintf(tw, colorize(colorRef, "↩︎ &%d"), id)
+			fmt.Fprintf(w, d.colorize(colorRef, "↩︎ &%d"), id)
 			return
 		} else {
 			referenceMap[ptr] = nextRefID
@@ -438,11 +448,11 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 
 	switch v.Kind() {
 	case reflect.Ptr, reflect.Interface:
-		d.printValue(tw, v.Elem(), indent, visited)
+		d.printValue(w, v.Elem(), indent, visited)
 	case reflect.Struct:
 		t := v.Type()
-		fmt.Fprintf(tw, "%s {", colorize(colorGray, "#"+t.String()))
-		fmt.Fprintln(tw)
+		fmt.Fprintf(w, "%s {", d.colorize(colorGray, "#"+t.String()))
+		fmt.Fprintln(w)
 
 		for i := range t.NumField() {
 			field := t.Field(i)
@@ -453,89 +463,89 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 				symbol = "-"
 				fieldVal = forceExported(fieldVal)
 			}
-			indentPrint(tw, indent+1, colorize(colorYellow, symbol)+field.Name)
-			fmt.Fprint(tw, "	=> ")
-			if s := asStringer(fieldVal); s != "" {
-				fmt.Fprint(tw, s)
+			indentPrint(w, indent+1, d.colorize(colorYellow, symbol)+field.Name)
+			fmt.Fprint(w, "	=> ")
+			if s := d.asStringer(fieldVal); s != "" {
+				fmt.Fprint(w, s)
 			} else {
-				d.printValue(tw, fieldVal, indent+1, visited)
+				d.printValue(w, fieldVal, indent+1, visited)
 			}
-			fmt.Fprintln(tw)
+			fmt.Fprintln(w)
 		}
-		indentPrint(tw, indent, "")
-		fmt.Fprint(tw, "}")
+		indentPrint(w, indent, "")
+		fmt.Fprint(w, "}")
 	case reflect.Complex64, reflect.Complex128:
-		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprintf("%v", v.Complex())))
+		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprintf("%v", v.Complex())))
 	case reflect.UnsafePointer:
-		fmt.Fprint(tw, colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
+		fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
 	case reflect.Map:
-		fmt.Fprintln(tw, "{")
+		fmt.Fprintln(w, "{")
 		keys := v.MapKeys()
 		for i, key := range keys {
 			if i >= d.maxItems {
-				indentPrint(tw, indent+1, colorize(colorGray, "... (truncated)"))
+				indentPrint(w, indent+1, d.colorize(colorGray, "... (truncated)"))
 				break
 			}
 			keyStr := fmt.Sprintf("%v", key.Interface())
-			indentPrint(tw, indent+1, fmt.Sprintf(" %s => ", colorize(colorMeta, keyStr)))
-			d.printValue(tw, v.MapIndex(key), indent+1, visited)
-			fmt.Fprintln(tw)
+			indentPrint(w, indent+1, fmt.Sprintf(" %s => ", d.colorize(colorMeta, keyStr)))
+			d.printValue(w, v.MapIndex(key), indent+1, visited)
+			fmt.Fprintln(w)
 		}
-		indentPrint(tw, indent, "")
-		fmt.Fprint(tw, "}")
+		indentPrint(w, indent, "")
+		fmt.Fprint(w, "}")
 	case reflect.Slice, reflect.Array:
 		// []byte handling
 		if v.Type().Elem().Kind() == reflect.Uint8 {
 			if v.CanConvert(reflect.TypeOf([]byte{})) { // Check if it can be converted to []byte
 				if data, ok := v.Convert(reflect.TypeOf([]byte{})).Interface().([]byte); ok {
-					hexDump := formatByteSliceAsHexDump(data, indent+1)
-					fmt.Fprint(tw, colorize(colorGray, hexDump))
+					hexDump := d.formatByteSliceAsHexDump(data, indent+1)
+					fmt.Fprint(w, d.colorize(colorLime, hexDump))
 					break
 				}
 			}
 		}
 
 		// Default rendering for other slices/arrays
-		fmt.Fprintln(tw, "[")
+		fmt.Fprintln(w, "[")
 		for i := range v.Len() {
 			if i >= d.maxItems {
-				indentPrint(tw, indent+1, colorize(colorGray, "... (truncated)\n"))
+				indentPrint(w, indent+1, d.colorize(colorGray, "... (truncated)\n"))
 				break
 			}
-			indentPrint(tw, indent+1, fmt.Sprintf("%s => ", colorize(colorCyan, fmt.Sprintf("%d", i))))
-			d.printValue(tw, v.Index(i), indent+1, visited)
-			fmt.Fprintln(tw)
+			indentPrint(w, indent+1, fmt.Sprintf("%s => ", d.colorize(colorCyan, fmt.Sprintf("%d", i))))
+			d.printValue(w, v.Index(i), indent+1, visited)
+			fmt.Fprintln(w)
 		}
-		indentPrint(tw, indent, "")
-		fmt.Fprint(tw, "]")
+		indentPrint(w, indent, "")
+		fmt.Fprint(w, "]")
 	case reflect.String:
 		str := escapeControl(v.String())
 		if utf8.RuneCountInString(str) > d.maxStringLen {
 			runes := []rune(str)
 			str = string(runes[:d.maxStringLen]) + "…"
 		}
-		fmt.Fprint(tw, colorize(colorYellow, `"`)+colorize(colorLime, str)+colorize(colorYellow, `"`))
+		fmt.Fprint(w, d.colorize(colorYellow, `"`)+d.colorize(colorLime, str)+d.colorize(colorYellow, `"`))
 	case reflect.Bool:
 		if v.Bool() {
-			fmt.Fprint(tw, colorize(colorYellow, "true"))
+			fmt.Fprint(w, d.colorize(colorYellow, "true"))
 		} else {
-			fmt.Fprint(tw, colorize(colorGray, "false"))
+			fmt.Fprint(w, d.colorize(colorGray, "false"))
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprint(v.Int())))
+		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprint(v.Int())))
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprint(v.Uint())))
+		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprint(v.Uint())))
 	case reflect.Float32, reflect.Float64:
-		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprintf("%f", v.Float())))
+		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprintf("%f", v.Float())))
 	case reflect.Func:
-		fmt.Fprint(tw, colorize(colorGray, v.Type().String()))
+		fmt.Fprint(w, d.colorize(colorGray, v.Type().String()))
 	default:
 		// unreachable; all reflect.Kind cases are handled
 	}
 }
 
 // asStringer checks if the value implements fmt.Stringer and returns its string representation.
-func asStringer(v reflect.Value) string {
+func (d *Dumper) asStringer(v reflect.Value) string {
 	val := v
 	if !val.CanInterface() {
 		val = forceExported(val)
@@ -544,17 +554,17 @@ func asStringer(v reflect.Value) string {
 		if s, ok := val.Interface().(fmt.Stringer); ok {
 			rv := reflect.ValueOf(s)
 			if rv.Kind() == reflect.Ptr && rv.IsNil() {
-				return colorize(colorGray, val.Type().String()+"(nil)")
+				return d.colorize(colorGray, val.Type().String()+"(nil)")
 			}
-			return colorize(colorLime, s.String()) + colorize(colorGray, " #"+val.Type().String())
+			return d.colorize(colorLime, s.String()) + d.colorize(colorGray, " #"+val.Type().String())
 		}
 	}
 	return ""
 }
 
-// indentPrint prints indented text to the tabwriter.
-func indentPrint(tw *tabwriter.Writer, indent int, text string) {
-	fmt.Fprint(tw, strings.Repeat(" ", indent*indentWidth)+text)
+// indentPrint prints indented text to the writer.
+func indentPrint(w io.Writer, indent int, text string) {
+	fmt.Fprint(w, strings.Repeat(" ", indent*indentWidth)+text)
 }
 
 // forceExported returns a value that is guaranteed to be exported, even if it is unexported.
@@ -620,4 +630,11 @@ func detectColor() bool {
 		return true
 	}
 	return true
+}
+
+func newColorizer() Colorizer {
+	if detectColor() {
+		return colorizeANSI
+	}
+	return colorizeUnstyled
 }
