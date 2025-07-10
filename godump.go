@@ -648,7 +648,8 @@ func detectColor() bool {
 	if os.Getenv("FORCE_COLOR") != "" {
 		return true
 	}
-	return true
+	
+	return isTerminal(os.Stdout)
 }
 
 func newColorizer() Colorizer {
