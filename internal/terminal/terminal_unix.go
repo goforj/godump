@@ -1,19 +1,16 @@
 //go:build !windows
 
-package godump
+package terminal
 
 import (
 	"os"
-	"testing"
 )
 
-var isTestEnv = testing.Testing
-
-// isTerminal checks if the given file is a terminal.
+// IsTerminal checks if the given file is a terminal.
 // Uses ModeCharDevice on Unix-like systems.
 // In test environments, it returns true unless explicitly overridden by environment variables.
-func isTerminal(f *os.File) bool {
-	if isTestEnv() {
+func IsTerminal(f *os.File) bool {
+	if IsTestEnv() {
 		return true
 	}
 
@@ -22,4 +19,4 @@ func isTerminal(f *os.File) bool {
 		return false
 	}
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
-}
+} 

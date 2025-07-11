@@ -1,4 +1,4 @@
-package godump
+package terminal
 
 import (
 	"os"
@@ -8,10 +8,10 @@ import (
 )
 
 func TestIsTerminal_Unix(t *testing.T) {
-	// Mock isTestEnv to bypass the test environment check
-	originalIsTestEnv := isTestEnv
-	isTestEnv = func() bool { return false }
-	defer func() { isTestEnv = originalIsTestEnv }()
+	// Mock IsTestEnv to bypass the test environment check
+	originalIsTestEnv := IsTestEnv
+	IsTestEnv = func() bool { return false }
+	defer func() { IsTestEnv = originalIsTestEnv }()
 
 	t.Run("should return false for a regular file", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp("", "test-is-terminal")
@@ -19,7 +19,7 @@ func TestIsTerminal_Unix(t *testing.T) {
 		defer os.Remove(tmpFile.Name())
 		defer tmpFile.Close()
 
-		assert.False(t, isTerminal(tmpFile))
+		assert.False(t, IsTerminal(tmpFile))
 	})
 
 	t.Run("should return false when stat fails", func(t *testing.T) {
@@ -28,14 +28,14 @@ func TestIsTerminal_Unix(t *testing.T) {
 		tmpFile.Close()
 		os.Remove(tmpFile.Name())
 
-		assert.False(t, isTerminal(tmpFile))
+		assert.False(t, IsTerminal(tmpFile))
 	})
 
 	t.Run("should return true when in test environment", func(t *testing.T) {
-		isTestEnv = func() bool { return true }
+		IsTestEnv = func() bool { return true }
 		defer func() {
-			isTestEnv = originalIsTestEnv
+			IsTestEnv = originalIsTestEnv
 		}()
-		assert.True(t, isTerminal(os.Stdout))
+		assert.True(t, IsTerminal(os.Stdout))
 	})
 } 

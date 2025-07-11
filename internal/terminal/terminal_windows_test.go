@@ -1,6 +1,6 @@
 //go:build windows
 
-package godump
+package terminal
 
 import (
 	"os"
@@ -10,10 +10,10 @@ import (
 )
 
 func TestIsTerminal_Windows(t *testing.T) {
-	// Mock isTestEnv to bypass the test environment check
-	originalIsTestEnv := isTestEnv
-	isTestEnv = func() bool { return false }
-	defer func() { isTestEnv = originalIsTestEnv }()
+	// Mock IsTestEnv to bypass the test environment check
+	originalIsTestEnv := IsTestEnv
+	IsTestEnv = func() bool { return false }
+	defer func() { IsTestEnv = originalIsTestEnv }()
 
 	t.Run("should return false for a regular file", func(t *testing.T) {
 		tmpFile, err := os.CreateTemp("", "test-is-terminal-windows")
@@ -22,13 +22,13 @@ func TestIsTerminal_Windows(t *testing.T) {
 		defer tmpFile.Close()
 
 		// On Windows, GetConsoleMode should fail for a regular file, so isTerminal returns false.
-		assert.False(t, isTerminal(tmpFile))
+		assert.False(t, IsTerminal(tmpFile))
 	})
 
 	t.Run("should return true when in test environment", func(t *testing.T) {
-		isTestEnv = func() bool { return true }
-		defer func() { isTestEnv = originalIsTestEnv }()
-		
-		assert.True(t, isTerminal(os.Stdout))
+		IsTestEnv = func() bool { return true }
+		defer func() { IsTestEnv = originalIsTestEnv }()
+
+		assert.True(t, IsTerminal(os.Stdout))
 	})
 } 
