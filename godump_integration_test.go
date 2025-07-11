@@ -29,13 +29,15 @@ func main() {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 
-	if _, err := tempFile.WriteString(sourceCode); err != nil {
+	_, err = tempFile.WriteString(sourceCode)
+	if err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 	tempFile.Close()
 
 	// Run the program using `go run`. By capturing the output, we ensure
 	// that the program's stdout is not a TTY.
+	//nolint:gosec // tempFile.Name() is a controlled temporary file created by this test
 	cmd := exec.Command("go", "run", tempFile.Name())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -68,13 +70,15 @@ func main() {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
 
-	if _, err := tempFile.WriteString(sourceCode); err != nil {
+	_, err = tempFile.WriteString(sourceCode)
+	if err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 	tempFile.Close()
 
 	// Run the program using `go run`. By capturing the output, we ensure
 	// that the program's stdout is not a TTY.
+	//nolint:gosec // tempFile.Name() is a controlled temporary file created by this test
 	cmd := exec.Command("go", "run", tempFile.Name())
 
 	cmd.Env = append(os.Environ(), "FORCE_COLOR=1")

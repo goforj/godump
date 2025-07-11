@@ -8,11 +8,13 @@ import (
 	"testing"
 )
 
+var isTestEnv = testing.Testing
+
 // isTerminal checks if the given file is a terminal.
 // Uses GetConsoleMode on Windows.
 // In test environments, it returns true unless explicitly overridden by environment variables.
 func isTerminal(f *os.File) bool {
-	if isTestEnvironment() {
+	if isTestEnv() {
 		return true
 	}
 
@@ -22,8 +24,3 @@ func isTerminal(f *os.File) bool {
 	err := syscall.GetConsoleMode(syscall.Handle(f.Fd()), &mode)
 	return err == nil
 }
-
-// isTestEnvironment checks if the code is running in a test environment
-func isTestEnvironment() bool {
-	return testing.Testing()
-} 
