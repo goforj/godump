@@ -12,6 +12,8 @@ import (
 	"text/tabwriter"
 	"unicode/utf8"
 	"unsafe"
+
+	"github.com/goforj/godump/internal/terminal"
 )
 
 const (
@@ -619,5 +621,6 @@ func detectColor() bool {
 	if os.Getenv("FORCE_COLOR") != "" {
 		return true
 	}
-	return true
+
+	return terminal.IsTerminal(os.Stdout)
 }
