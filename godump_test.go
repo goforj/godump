@@ -653,7 +653,6 @@ func TestTheKitchenSink(t *testing.T) {
 	// Ensure no panic occurred and a sane dump was produced
 	assert.Contains(t, out, "#")          // loosest
 	assert.Contains(t, out, "Everything") // middle-ground
-
 }
 
 func TestAnsiColorize_Disabled(t *testing.T) {
@@ -738,7 +737,7 @@ func TestAsStringer_ForceExported(t *testing.T) {
 	v := reflect.ValueOf(h).Elem().FieldByName("secret") // now v.CanAddr() is true, but v.CanInterface() is false
 
 	assert.False(t, v.CanInterface(), "field must not be interfaceable")
-	str := asStringer(v)
+	str := defaultDumper.asStringer(v)
 
 	assert.Contains(t, str, "👻 hidden stringer")
 }
@@ -1052,5 +1051,26 @@ func TestDumpJSON(t *testing.T) {
 
 		assert.Equal(t, []any{"foo", float64(123), true}, got)
 	})
+}
 
+type hasStringer struct {
+	internal string
+}
+
+func (hasStringer) String() string {
+	return "stringer value"
+}
+
+func TestDisableMethods(t *testing.T) {
+	data := hasStringer{
+		internal: "internal value",
+	}
+
+	d := NewDumper(WithDisableMethods(true))
+	v := d.DumpStr(data)
+	require.Contains(t, v, "internal value")
+
+	d = NewDumper()
+	v = d.DumpStr(data)
+	require.Contains(t, v, "stringer value")
 }
