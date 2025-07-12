@@ -663,7 +663,6 @@ func TestTheKitchenSink(t *testing.T) {
 	// Ensure no panic occurred and a sane dump was produced
 	assert.Contains(t, out, "#")          // loosest
 	assert.Contains(t, out, "Everything") // middle-ground
-
 }
 
 func TestForceExportedFallback(t *testing.T) {
@@ -1047,5 +1046,26 @@ func TestDumpJSON(t *testing.T) {
 
 		assert.Equal(t, []any{"foo", float64(123), true}, got)
 	})
+}
 
+type hasStringer struct {
+	internal string
+}
+
+func (hasStringer) String() string {
+	return "stringer value"
+}
+
+func TestDisableMethods(t *testing.T) {
+	data := hasStringer{
+		internal: "internal value",
+	}
+
+	d := NewDumper(WithDisableMethods(true))
+	v := d.DumpStr(data)
+	require.Contains(t, v, "internal value")
+
+	d = NewDumper()
+	v = d.DumpStr(data)
+	require.Contains(t, v, "stringer value")
 }
