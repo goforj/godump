@@ -29,11 +29,12 @@ const (
 
 // Default configuration values for the Dumper.
 const (
-	defaultMaxDepth      = 15
-	defaultMaxItems      = 100
-	defaultMaxStringLen  = 100000
-	defaultMaxStackDepth = 10
-	initialCallerSkip    = 2
+	defaultDisableMethods = false
+	defaultMaxDepth       = 15
+	defaultMaxItems       = 100
+	defaultMaxStringLen   = 100000
+	defaultMaxStackDepth  = 10
+	initialCallerSkip     = 2
 )
 
 // defaultDumper is the default Dumper instance used by Dump and DumpStr functions.
@@ -86,6 +87,7 @@ type Dumper struct {
 	maxStringLen       int
 	writer             io.Writer
 	skippedStackFrames int
+	disableMethods     bool
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -149,15 +151,26 @@ func WithSkipStackFrames(n int) Option {
 	}
 }
 
+// WithDisableMethods will determine if interface methods such as the stringer
+// interface should be called for types implementing it. This can be useful if
+// you want to see the internals of types implementing a method.
+func WithDisableMethods(b bool) Option {
+	return func(d *Dumper) *Dumper {
+		d.disableMethods = b
+		return d
+	}
+}
+
 // NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
 func NewDumper(opts ...Option) *Dumper {
 	d := &Dumper{
-		maxDepth:     defaultMaxDepth,
-		maxItems:     defaultMaxItems,
-		maxStringLen: defaultMaxStringLen,
-		writer:       os.Stdout,
-		callerFn:     runtime.Caller,
+		maxDepth:       defaultMaxDepth,
+		maxItems:       defaultMaxItems,
+		maxStringLen:   defaultMaxStringLen,
+		disableMethods: defaultDisableMethods,
+		writer:         os.Stdout,
+		callerFn:       runtime.Caller,
 	}
 	for _, opt := range opts {
 		d = opt(d)
@@ -404,7 +417,7 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 		return
 	}
 
-	if s := asStringer(v); s != "" {
+	if s := d.asStringer(v); s != "" {
 		fmt.Fprint(tw, s)
 		return
 	}
@@ -455,7 +468,7 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 			}
 			indentPrint(tw, indent+1, colorize(colorYellow, symbol)+field.Name)
 			fmt.Fprint(tw, "	=> ")
-			if s := asStringer(fieldVal); s != "" {
+			if s := d.asStringer(fieldVal); s != "" {
 				fmt.Fprint(tw, s)
 			} else {
 				d.printValue(tw, fieldVal, indent+1, visited)
@@ -535,7 +548,11 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 }
 
 // asStringer checks if the value implements fmt.Stringer and returns its string representation.
-func asStringer(v reflect.Value) string {
+func (d *Dumper) asStringer(v reflect.Value) string {
+	if d.disableMethods {
+		return ""
+	}
+
 	val := v
 	if !val.CanInterface() {
 		val = forceExported(val)
