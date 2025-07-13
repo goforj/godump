@@ -1048,24 +1048,14 @@ func TestDumpJSON(t *testing.T) {
 	})
 }
 
-type hasStringer struct {
-	internal string
-}
-
-func (hasStringer) String() string {
-	return "stringer value"
-}
-
 func TestDisableMethods(t *testing.T) {
-	data := hasStringer{
-		internal: "internal value",
-	}
+	data := hidden{secret: "not so secret"}
 
 	d := NewDumper(WithDisableMethods(true))
 	v := d.DumpStr(data)
-	require.Contains(t, v, "internal value")
+	require.Contains(t, v, "not so secret")
 
 	d = NewDumper()
 	v = d.DumpStr(data)
-	require.Contains(t, v, "stringer value")
+	assert.Contains(t, v, "👻 hidden stringer")
 }
