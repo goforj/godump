@@ -1059,3 +1059,54 @@ func TestDisableStringer(t *testing.T) {
 	v = d.DumpStr(data)
 	assert.Contains(t, v, `-secret => 👻 hidden stringer`)
 }
+
+func TestShowAllTypesFlag(t *testing.T) {
+	type StrAlias string
+
+	type ShowTypes struct {
+		SignedNumber   int
+		UnsignedNumber uint
+		Float          float64
+		Str            string
+		Alias          StrAlias
+		Boolean        bool
+		Time           time.Time
+		Slice          []int
+		KeyVal         map[string]string
+	}
+
+	v := ShowTypes{
+		SignedNumber:   -10,
+		UnsignedNumber: 10,
+		Float:          10.10,
+		Str:            "Hello, World",
+		Alias:          StrAlias("Hello, World"),
+		Boolean:        true,
+		Time:           time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC),
+		Slice:          []int{1, 2, 3},
+		KeyVal: map[string]string{
+			"k1": "v1",
+			"k2": "v2",
+		},
+	}
+
+	out := stripANSI(NewDumper().DumpStr(v))
+	assert.NotContains(t, out, "#int")
+	assert.NotContains(t, out, "#uint")
+	assert.NotContains(t, out, "#float64")
+	assert.NotContains(t, out, "#string")
+	assert.NotContains(t, out, "StrAlias")
+	assert.NotContains(t, out, "#bool")
+	assert.NotContains(t, out, "#[]int")
+	assert.NotContains(t, out, "#map[string]string")
+
+	out = stripANSI(NewDumper(WithShowAllTypes(true)).DumpStr(v))
+	assert.Contains(t, out, "#int")
+	assert.Contains(t, out, "#uint")
+	assert.Contains(t, out, "#float64")
+	assert.Contains(t, out, "#string")
+	assert.Contains(t, out, "StrAlias")
+	assert.Contains(t, out, "#bool")
+	assert.Contains(t, out, "#[]int")
+	assert.Contains(t, out, "#map[string]string")
+}
