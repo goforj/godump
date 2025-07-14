@@ -33,6 +33,7 @@ const (
 	defaultMaxItems      = 100
 	defaultMaxStringLen  = 100000
 	defaultMaxStackDepth = 10
+	defaultShowAllTypes  = false
 	initialCallerSkip    = 2
 )
 
@@ -84,6 +85,7 @@ type Dumper struct {
 	maxDepth           int
 	maxItems           int
 	maxStringLen       int
+	showAllTypes       bool
 	writer             io.Writer
 	skippedStackFrames int
 
@@ -149,6 +151,14 @@ func WithSkipStackFrames(n int) Option {
 	}
 }
 
+// WithShowAllTypes enables or disables always showing types for primitives.
+func WithShowAllTypes(b bool) Option {
+	return func(d *Dumper) *Dumper {
+		d.showAllTypes = b
+		return d
+	}
+}
+
 // NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
 func NewDumper(opts ...Option) *Dumper {
@@ -156,6 +166,7 @@ func NewDumper(opts ...Option) *Dumper {
 		maxDepth:     defaultMaxDepth,
 		maxItems:     defaultMaxItems,
 		maxStringLen: defaultMaxStringLen,
+		showAllTypes: defaultShowAllTypes,
 		writer:       os.Stdout,
 		callerFn:     runtime.Caller,
 	}
@@ -469,7 +480,17 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 	case reflect.UnsafePointer:
 		fmt.Fprint(tw, colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
 	case reflect.Map:
-		fmt.Fprintln(tw, "{")
+		if d.showAllTypes {
+			keyType := v.Type().Key().Kind().String()
+			valType := v.Type().Elem().Kind().String()
+			keyValType := fmt.Sprintf("#map[%s]%s", keyType, valType)
+
+			fmt.Fprintf(tw, "{ %s", colorize(colorGray, keyValType))
+			fmt.Fprintln(tw)
+		} else {
+			fmt.Fprintln(tw, "{")
+		}
+
 		keys := v.MapKeys()
 		for i, key := range keys {
 			if i >= d.maxItems {
@@ -496,7 +517,13 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 		}
 
 		// Default rendering for other slices/arrays
-		fmt.Fprintln(tw, "[")
+		if d.showAllTypes {
+			fmt.Fprintf(tw, "[ %s", colorize(colorGray, "#[]"+v.Type().Elem().Kind().String()))
+			fmt.Fprintln(tw)
+		} else {
+			fmt.Fprintln(tw, "[")
+		}
+
 		for i := range v.Len() {
 			if i >= d.maxItems {
 				indentPrint(tw, indent+1, colorize(colorGray, "... (truncated)\n"))
@@ -515,18 +542,33 @@ func (d *Dumper) printValue(tw *tabwriter.Writer, v reflect.Value, indent int, v
 			str = string(runes[:d.maxStringLen]) + "…"
 		}
 		fmt.Fprint(tw, colorize(colorYellow, `"`)+colorize(colorLime, str)+colorize(colorYellow, `"`))
+		if d.showAllTypes {
+			fmt.Fprint(tw, colorize(colorGray, " #"+v.Type().String()))
+		}
 	case reflect.Bool:
 		if v.Bool() {
 			fmt.Fprint(tw, colorize(colorYellow, "true"))
 		} else {
 			fmt.Fprint(tw, colorize(colorGray, "false"))
 		}
+		if d.showAllTypes {
+			fmt.Fprint(tw, colorize(colorGray, " #"+v.Type().String()))
+		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprint(v.Int())))
+		if d.showAllTypes {
+			fmt.Fprint(tw, colorize(colorGray, " #"+v.Type().String()))
+		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprint(v.Uint())))
+		if d.showAllTypes {
+			fmt.Fprint(tw, colorize(colorGray, " #"+v.Type().String()))
+		}
 	case reflect.Float32, reflect.Float64:
 		fmt.Fprint(tw, colorize(colorCyan, fmt.Sprintf("%f", v.Float())))
+		if d.showAllTypes {
+			fmt.Fprint(tw, colorize(colorGray, " #"+v.Type().String()))
+		}
 	case reflect.Func:
 		fmt.Fprint(tw, colorize(colorGray, v.Type().String()))
 	default:
