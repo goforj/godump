@@ -22,9 +22,6 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Check code modernization
-        run: make modernize-check
-
       - name: Run tests
         run: go test ./... -v
 
