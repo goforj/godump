@@ -80,7 +80,7 @@ func TestMaxDepth(t *testing.T) {
 	}
 	n := &Node{}
 	curr := n
-	for range 20 {
+	for i := 0; i < 20; i++ {
 		curr.Child = &Node{}
 		curr = curr.Child
 	}
@@ -341,7 +341,7 @@ func TestMaxDepthTruncation(t *testing.T) {
 	}
 	root := &Node{}
 	curr := root
-	for range 20 {
+	for i := 0; i < 20; i++ {
 		curr.Next = &Node{}
 		curr = curr.Next
 	}
@@ -356,7 +356,7 @@ func TestCustomMaxDepthTruncation(t *testing.T) {
 	}
 	root := &Node{}
 	curr := root
-	for range 3 {
+	for i := 0; i < 3; i++ {
 		curr.Next = &Node{}
 		curr = curr.Next
 	}
@@ -373,7 +373,7 @@ func TestCustomMaxDepthTruncation(t *testing.T) {
 
 func TestMapTruncation(t *testing.T) {
 	largeMap := map[int]int{}
-	for i := range 200 {
+	for i := 0; i < 200; i++ {
 		largeMap[i] = i
 	}
 	out := dumpStrT(t, largeMap)

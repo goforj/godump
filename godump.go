@@ -340,7 +340,11 @@ func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 	sb.WriteString(fmt.Sprintf("([]uint8) (len=%d cap=%d) {\n", len(b), cap(b)))
 
 	for i := 0; i < len(b); i += lineLen {
-		end := min(i+lineLen, len(b))
+
+		end := i + lineLen
+		if end > len(b) {
+			end = len(b)
+		}
 		line := b[i:end]
 
 		visibleLen := 0
@@ -352,7 +356,7 @@ func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 		visibleLen += len(offsetStr)
 
 		// Hex bytes
-		for j := range lineLen {
+		for j := 0; j < lineLen; j++ {
 			var hexStr string
 			if j < len(line) {
 				hexStr = fmt.Sprintf("%02x ", line[j])
@@ -367,7 +371,10 @@ func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 		}
 
 		// Padding before ASCII
-		padding := max(1, asciiStartCol-visibleLen)
+		padding := asciiStartCol - visibleLen
+		if padding < 1 {
+			padding = 1
+		}
 		sb.WriteString(strings.Repeat(" ", padding))
 
 		// ASCII section
@@ -454,7 +461,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 		fmt.Fprintf(w, "%s {", d.colorize(colorGray, "#"+t.String()))
 		fmt.Fprintln(w)
 
-		for i := range t.NumField() {
+		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			fieldVal := v.Field(i)
 
@@ -507,7 +514,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 
 		// Default rendering for other slices/arrays
 		fmt.Fprintln(w, "[")
-		for i := range v.Len() {
+		for i := 0; i < v.Len(); i++ {
 			if i >= d.maxItems {
 				indentPrint(w, indent+1, d.colorize(colorGray, "... (truncated)\n"))
 				break

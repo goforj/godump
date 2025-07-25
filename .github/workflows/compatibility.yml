@@ -10,13 +10,29 @@ on:
     - cron: "0 3 * * 0"
 
 jobs:
+  go-versions:
+    name: Lookup Go versions
+    runs-on: ubuntu-latest
+    outputs:
+      go-mod-version: ${{ steps.versions.outputs.go-mod-version }}
+      latest: ${{ steps.versions.outputs.latest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: arnested/go-version-action@v1
+        id: versions
+        with:
+          unstable: true # this includes the future -rc versions
+
   go-compatibility:
+    needs: go-versions
     name: Go ${{ matrix.go-version }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       matrix:
-        go-version: ["1.23", "oldstable", "stable"]
+        go-version: ["${{ needs.go-versions.outputs.go-mod-version }}", "oldstable", "stable"]
 
     steps:
       - name: Checkout
@@ -26,6 +42,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
+          check-latest: true
 
       - name: Run tests
         run: go test ./... -v -race
