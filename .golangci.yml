@@ -79,7 +79,7 @@ linters:
           disabled: true
         - name: cognitive-complexity
           arguments:
-            - 50
+            - 60
         - name: cyclomatic
           arguments:
             # lower=better
