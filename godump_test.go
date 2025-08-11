@@ -124,9 +124,9 @@ func TestEmbeddedAnonymousStruct(t *testing.T) {
 
 	assert.Contains(t, out, `#godump.Derived {
   +Base => #godump.Base {
-    +ID => 456
+    +ID => 456 #int
   }
-  +Name => "Test"
+  +Name => "Test" #string
 }`)
 }
 
@@ -223,7 +223,7 @@ func TestUnreadableFallback(t *testing.T) {
 	var ch chan int // nil typed value, not interface
 	rv := reflect.ValueOf(ch)
 
-	newDumperT(t).printValue(tw, rv, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, rv, 0)
 	tw.Flush()
 
 	output := b.String()
@@ -243,7 +243,7 @@ func TestUnreadableFieldFallback(t *testing.T) {
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 
-	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0)
 	tw.Flush()
 
 	out := sb.String()
@@ -268,14 +268,14 @@ func TestPrimitiveTypes(t *testing.T) {
 		any(42),
 	)
 
-	assert.Contains(t, out, "1")        // int8
-	assert.Contains(t, out, "2")        // int16
-	assert.Contains(t, out, "3")        // uint8
-	assert.Contains(t, out, "4")        // uint16
-	assert.Contains(t, out, "5")        // uintptr
-	assert.Contains(t, out, "1.500000") // float32
-	assert.Contains(t, out, "0 =>")     // array
-	assert.Contains(t, out, "42")       // interface{}
+	assert.Contains(t, out, "1 #int8")
+	assert.Contains(t, out, "2 #int16")
+	assert.Contains(t, out, "3 #uint8")
+	assert.Contains(t, out, "4 #uint16")
+	assert.Contains(t, out, "5 #uintptr")
+	assert.Contains(t, out, "1.500000 #float32")
+	assert.Contains(t, out, "0 => 6 #int") // array
+	assert.Contains(t, out, "42 #int")     // interface{}
 }
 
 func TestEscapeControl_AllVariants(t *testing.T) {
@@ -296,7 +296,7 @@ func TestDefaultFallback_Unreadable(t *testing.T) {
 
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0)
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "<invalid>")
@@ -307,7 +307,7 @@ func TestPrintValue_Uintptr(t *testing.T) {
 	val := uintptr(12345)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(val), 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, reflect.ValueOf(val), 0)
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "12345")
@@ -319,7 +319,7 @@ func TestPrintValue_UnsafePointer(t *testing.T) {
 	up := unsafe.Pointer(&i)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(up), 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, reflect.ValueOf(up), 0)
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "unsafe.Pointer")
@@ -329,7 +329,7 @@ func TestPrintValue_Func(t *testing.T) {
 	fn := func() {}
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(fn), 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, reflect.ValueOf(fn), 0)
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "func()")
@@ -463,7 +463,7 @@ func TestDefaultBranchFallback(t *testing.T) {
 	var v reflect.Value // zero reflect.Value
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0)
 	tw.Flush()
 	if !strings.Contains(sb.String(), "<invalid>") {
 		t.Error("Expected default fallback for invalid reflect.Value")
@@ -567,6 +567,10 @@ func (fd FriendlyDuration) String() string {
 }
 
 func TestTheKitchenSink(t *testing.T) {
+	type IsZeroer interface {
+		IsZero() bool
+	}
+
 	type Inner struct {
 		ID    int
 		Notes []string
@@ -593,6 +597,7 @@ func TestTheKitchenSink(t *testing.T) {
 		Nested        Inner
 		NestedPtr     *Inner
 		Interface     any
+		InterfaceImpl IsZeroer
 		Recursive     *Ref
 		privateField  string
 		privateStruct Inner
@@ -626,6 +631,7 @@ func TestTheKitchenSink(t *testing.T) {
 			Blob:  []byte(`{"msg":"hi","status":"cool"}`),
 		},
 		Interface:     map[string]bool{"ok": true},
+		InterfaceImpl: time.Time{},
 		Recursive:     &Ref{},
 		privateField:  "should show",
 		privateStruct: Inner{ID: 5, Notes: []string{"private"}},
@@ -638,26 +644,31 @@ func TestTheKitchenSink(t *testing.T) {
 
 	// Minimal coverage assertions
 	assert.Contains(t, out, "+String")
-	assert.Contains(t, out, `"test"`)
+	assert.Contains(t, out, `"test" #string`)
 	assert.Contains(t, out, "+Bool")
-	assert.Contains(t, out, "true")
+	assert.Contains(t, out, "true #bool")
 	assert.Contains(t, out, "+Int")
-	assert.Contains(t, out, "42")
+	assert.Contains(t, out, "42 #int")
 	assert.Contains(t, out, "+Float")
-	assert.Contains(t, out, "3.1415")
+	assert.Contains(t, out, "3.141500 #float64")
 	assert.Contains(t, out, "+PtrString")
-	assert.Contains(t, out, `"Hello"`)
+	assert.Contains(t, out, `"Hello" #*string`)
+	assert.Contains(t, out, "+PtrDuration")
+	assert.Contains(t, out, "20m0s #*time.Duration")
 	assert.Contains(t, out, "+SliceInts")
-	assert.Contains(t, out, "0 => 1")
+	assert.Contains(t, out, "0 => 1 #int")
 	assert.Contains(t, out, "+ArrayStrings")
-	assert.Contains(t, out, `"foo"`)
+	assert.Contains(t, out, "[2]string")
+	assert.Contains(t, out, `"foo" #string`)
 	assert.Contains(t, out, "+MapValues")
-	assert.Contains(t, out, "a => 1")
+	assert.Contains(t, out, "a => 1 #int")
+	assert.Contains(t, out, "+InterfaceImpl")
+	assert.Contains(t, out, "0001-01-01 00:00:00 +0000 UTC #godump.IsZeroer")
 	assert.Contains(t, out, "+Nested")
 	assert.Contains(t, out, "+ID") // from nested
 	assert.Contains(t, out, "+Notes")
 	assert.Contains(t, out, "-privateField")
-	assert.Contains(t, out, `"should show"`)
+	assert.Contains(t, out, `"should show" #string`)
 	assert.Contains(t, out, "↩︎") // recursion reference
 
 	// Ensure no panic occurred and a sane dump was produced
@@ -716,7 +727,7 @@ func TestPrintValue_ChanNilBranch_Hardforce(t *testing.T) {
 	assert.True(t, v.IsNil())
 	assert.Equal(t, reflect.Chan, v.Kind())
 
-	newDumperT(t).printValue(tw, v, 0, map[uintptr]bool{})
+	newDumperT(t).printValue(tw, v, 0)
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "customChan(nil)")
@@ -1060,53 +1071,12 @@ func TestDisableStringer(t *testing.T) {
 	assert.Contains(t, v, `-secret => 👻 hidden stringer`)
 }
 
-func TestShowAllTypesFlag(t *testing.T) {
-	type StrAlias string
+func TestRecursivePtr(t *testing.T) {
+	s := "string"
+	a := &s
+	b := &a
+	val := &b
 
-	type ShowTypes struct {
-		SignedNumber   int
-		UnsignedNumber uint
-		Float          float64
-		Str            string
-		Alias          StrAlias
-		Boolean        bool
-		Time           time.Time
-		Slice          []int
-		KeyVal         map[string]string
-	}
-
-	v := ShowTypes{
-		SignedNumber:   -10,
-		UnsignedNumber: 10,
-		Float:          10.10,
-		Str:            "Hello, World",
-		Alias:          StrAlias("Hello, World"),
-		Boolean:        true,
-		Time:           time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC),
-		Slice:          []int{1, 2, 3},
-		KeyVal: map[string]string{
-			"k1": "v1",
-			"k2": "v2",
-		},
-	}
-
-	out := stripANSI(NewDumper().DumpStr(v))
-	assert.NotContains(t, out, "#int")
-	assert.NotContains(t, out, "#uint")
-	assert.NotContains(t, out, "#float64")
-	assert.NotContains(t, out, "#string")
-	assert.NotContains(t, out, "StrAlias")
-	assert.NotContains(t, out, "#bool")
-	assert.NotContains(t, out, "#[]int")
-	assert.NotContains(t, out, "#map[string]string")
-
-	out = stripANSI(NewDumper(WithShowAllTypes(true)).DumpStr(v))
-	assert.Contains(t, out, "#int")
-	assert.Contains(t, out, "#uint")
-	assert.Contains(t, out, "#float64")
-	assert.Contains(t, out, "#string")
-	assert.Contains(t, out, "StrAlias")
-	assert.Contains(t, out, "#bool")
-	assert.Contains(t, out, "#[]int")
-	assert.Contains(t, out, "#map[string]string")
+	out := dumpStrT(t, val)
+	assert.Contains(t, out, "#***string")
 }
