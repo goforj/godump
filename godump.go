@@ -402,16 +402,30 @@ func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 
 func (d *Dumper) writeDump(w io.Writer, vs ...any) {
 	referenceMap = map[uintptr]int{} // reset each time
-	visited := map[uintptr]bool{}
 	for _, v := range vs {
 		rv := reflect.ValueOf(v)
 		rv = makeAddressable(rv)
-		d.printValue(w, rv, 0, visited)
+		d.printValue(w, rv, 0)
 		fmt.Fprintln(w)
 	}
 }
 
-func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited map[uintptr]bool) {
+func (d *Dumper) getTypeString(t reflect.Type) string {
+	switch t.Kind() {
+	case reflect.Map:
+		return fmt.Sprintf("map[%s]%s", d.getTypeString(t.Key()), d.getTypeString(t.Elem()))
+	case reflect.Slice:
+		return fmt.Sprintf("[]%s", d.getTypeString(t.Elem()))
+	case reflect.Array:
+		return fmt.Sprintf("[%d]%s", t.Len(), d.getTypeString(t.Elem()))
+	case reflect.Ptr:
+		return fmt.Sprintf("*%s", d.getTypeString(t.Elem()))
+	default:
+		return t.String()
+	}
+}
+
+func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 	if indent > d.maxDepth {
 		fmt.Fprint(w, d.colorize(colorGray, "... (max depth)"))
 		return
@@ -428,16 +442,18 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 
 	switch v.Kind() {
 	case reflect.Chan:
+		typ := d.colorizer(colorGray, d.getTypeString(v.Type()))
+
 		if v.IsNil() {
-			fmt.Fprint(w, d.colorize(colorGray, v.Type().String()+"(nil)"))
+			fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("#%s(nil)", typ)))
 		} else {
-			fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, v.Type().String()), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
+			fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, typ), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
 		}
 		return
 	}
 
 	if isNil(v) {
-		typeStr := v.Type().String()
+		typeStr := d.getTypeString(v.Type())
 		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
 		return
 	}
@@ -453,12 +469,22 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 		}
 	}
 
+	// We don't need to check any previous checks (validity, channel, nil,
+	// addressable pointer) since they all work directly on the pointer type. We
+	// can simply continue with the reference value from here and add a pointer
+	// prefix to the output.
+	ptrPrefix := ""
+	for v.Kind() == reflect.Ptr {
+		ptrPrefix += "*"
+		v = v.Elem()
+	}
+
 	switch v.Kind() {
-	case reflect.Ptr, reflect.Interface:
-		d.printValue(w, v.Elem(), indent, visited)
+	case reflect.Interface:
+		d.printValue(w, v.Elem(), indent)
 	case reflect.Struct:
 		t := v.Type()
-		fmt.Fprintf(w, "%s {", d.colorize(colorGray, "#"+t.String()))
+		fmt.Fprintf(w, "%s {", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
 		fmt.Fprintln(w)
 
 		for i := 0; i < t.NumField(); i++ {
@@ -475,7 +501,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 			if s := d.asStringer(fieldVal); s != "" {
 				fmt.Fprint(w, s)
 			} else {
-				d.printValue(w, fieldVal, indent+1, visited)
+				d.printValue(w, fieldVal, indent+1)
 			}
 			fmt.Fprintln(w)
 		}
@@ -486,7 +512,9 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 	case reflect.UnsafePointer:
 		fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
 	case reflect.Map:
-		fmt.Fprintln(w, "{")
+		fmt.Fprintf(w, "%s {", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		fmt.Fprintln(w)
+
 		keys := v.MapKeys()
 		for i, key := range keys {
 			if i >= d.maxItems {
@@ -495,7 +523,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 			}
 			keyStr := fmt.Sprintf("%v", key.Interface())
 			indentPrint(w, indent+1, fmt.Sprintf(" %s => ", d.colorize(colorMeta, keyStr)))
-			d.printValue(w, v.MapIndex(key), indent+1, visited)
+			d.printValue(w, v.MapIndex(key), indent+1)
 			fmt.Fprintln(w)
 		}
 		indentPrint(w, indent, "")
@@ -513,14 +541,16 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 		}
 
 		// Default rendering for other slices/arrays
-		fmt.Fprintln(w, "[")
+		fmt.Fprintf(w, "%s [", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		fmt.Fprintln(w)
+
 		for i := 0; i < v.Len(); i++ {
 			if i >= d.maxItems {
 				indentPrint(w, indent+1, d.colorize(colorGray, "... (truncated)\n"))
 				break
 			}
 			indentPrint(w, indent+1, fmt.Sprintf("%s => ", d.colorize(colorCyan, fmt.Sprintf("%d", i))))
-			d.printValue(w, v.Index(i), indent+1, visited)
+			d.printValue(w, v.Index(i), indent+1)
 			fmt.Fprintln(w)
 		}
 		indentPrint(w, indent, "")
@@ -549,6 +579,22 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 	default:
 		// unreachable; all reflect.Kind cases are handled
 	}
+
+	// These types should not have post types since they have a body and already
+	// had their type written out.
+	if contains([]reflect.Kind{
+		reflect.Struct,
+		reflect.UnsafePointer,
+		reflect.Map,
+		reflect.Slice,
+		reflect.Array,
+		reflect.Ptr,
+		reflect.Interface,
+	}, v.Kind()) {
+		return
+	}
+
+	fmt.Fprint(w, d.colorizer(colorGray, fmt.Sprintf(" #%s%s", ptrPrefix, d.getTypeString(v.Type()))))
 }
 
 // asStringer checks if the value implements fmt.Stringer and returns its string representation.
@@ -563,7 +609,7 @@ func (d *Dumper) asStringer(v reflect.Value) string {
 			if rv.Kind() == reflect.Ptr && rv.IsNil() {
 				return d.colorize(colorGray, val.Type().String()+"(nil)")
 			}
-			return d.colorize(colorLime, s.String()) + d.colorize(colorGray, " #"+val.Type().String())
+			return d.colorize(colorLime, s.String()) + d.colorize(colorGray, " #"+d.getTypeString(val.Type()))
 		}
 	}
 	return ""
@@ -644,4 +690,14 @@ func newColorizer() Colorizer {
 		return colorizeANSI
 	}
 	return colorizeUnstyled
+}
+
+func contains(candidates []reflect.Kind, target reflect.Kind) bool {
+	for _, candidate := range candidates {
+		if candidate == target {
+			return true
+		}
+	}
+
+	return false
 }
