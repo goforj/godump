@@ -29,12 +29,12 @@ const (
 
 // Default configuration values for the Dumper.
 const (
-	defaultDisableMethods = false
-	defaultMaxDepth       = 15
-	defaultMaxItems       = 100
-	defaultMaxStringLen   = 100000
-	defaultMaxStackDepth  = 10
-	initialCallerSkip     = 2
+	defaultDisableStringer = false
+	defaultMaxDepth        = 15
+	defaultMaxItems        = 100
+	defaultMaxStringLen    = 100000
+	defaultMaxStackDepth   = 10
+	initialCallerSkip      = 2
 )
 
 // defaultDumper is the default Dumper instance used by Dump and DumpStr functions.
@@ -91,7 +91,7 @@ type Dumper struct {
 	maxStringLen       int
 	writer             io.Writer
 	skippedStackFrames int
-	disableMethods     bool
+	disableStringer    bool
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -158,12 +158,11 @@ func WithSkipStackFrames(n int) Option {
 	}
 }
 
-// WithDisableMethods will determine if interface methods such as the stringer
-// interface should be called for types implementing it. This can be useful if
-// you want to see the internals of types implementing a method.
-func WithDisableMethods(b bool) Option {
+// WithDisableStringer will determine if the stringer value for types that
+// implement the stringer interface should be render instead of the actual type.
+func WithDisableStringer(b bool) Option {
 	return func(d *Dumper) *Dumper {
-		d.disableMethods = b
+		d.disableStringer = b
 		return d
 	}
 }
@@ -172,13 +171,13 @@ func WithDisableMethods(b bool) Option {
 // Defaults are used for any setting not overridden.
 func NewDumper(opts ...Option) *Dumper {
 	d := &Dumper{
-		maxDepth:       defaultMaxDepth,
-		maxItems:       defaultMaxItems,
-		maxStringLen:   defaultMaxStringLen,
-		disableMethods: defaultDisableMethods,
-		writer:         os.Stdout,
-		colorizer:      nil, // ensure no detection is made if we don't need it
-		callerFn:       runtime.Caller,
+		maxDepth:        defaultMaxDepth,
+		maxItems:        defaultMaxItems,
+		maxStringLen:    defaultMaxStringLen,
+		disableStringer: defaultDisableStringer,
+		writer:          os.Stdout,
+		colorizer:       nil, // ensure no detection is made if we don't need it
+		callerFn:        runtime.Caller,
 	}
 	for _, opt := range opts {
 		d = opt(d)
@@ -287,7 +286,7 @@ func (d *Dumper) Dd(vs ...any) {
 // clone creates a copy of the [Dumper] with the same configuration.
 // This is useful for creating a new dumper with the same settings without modifying the original.
 func (d *Dumper) clone() *Dumper {
-	newDumper := *d
+	var newDumper = *d
 	return &newDumper
 }
 
@@ -566,7 +565,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 
 // asStringer checks if the value implements fmt.Stringer and returns its string representation.
 func (d *Dumper) asStringer(v reflect.Value) string {
-	if d.disableMethods {
+	if d.disableStringer {
 		return ""
 	}
 

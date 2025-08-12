@@ -1048,10 +1048,10 @@ func TestDumpJSON(t *testing.T) {
 	})
 }
 
-func TestDisableMethods(t *testing.T) {
+func TestDisableStringer(t *testing.T) {
 	data := hidden{secret: "not so secret"}
 
-	d := NewDumper(WithDisableMethods(true))
+	d := NewDumper(WithDisableStringer(true))
 	v := d.DumpStr(data)
 	require.Contains(t, v, "not so secret")
 
