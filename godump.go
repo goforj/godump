@@ -484,11 +484,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, visited ma
 			}
 			indentPrint(w, indent+1, d.colorize(colorYellow, symbol)+field.Name)
 			fmt.Fprint(w, "	=> ")
-			if s := d.asStringer(fieldVal); s != "" {
-				fmt.Fprint(w, s)
-			} else {
-				d.printValue(w, fieldVal, indent+1, visited)
-			}
+			d.printValue(w, fieldVal, indent+1, visited)
 			fmt.Fprintln(w)
 		}
 		indentPrint(w, indent, "")

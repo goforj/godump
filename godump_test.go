@@ -1051,11 +1051,11 @@ func TestDumpJSON(t *testing.T) {
 func TestDisableStringer(t *testing.T) {
 	data := hidden{secret: "not so secret"}
 
-	d := NewDumper(WithDisableStringer(true))
+	d := newDumperT(t, WithDisableStringer(true))
 	v := d.DumpStr(data)
-	require.Contains(t, v, "not so secret")
+	require.Contains(t, v, `-secret => "not so secret"`)
 
-	d = NewDumper()
+	d = newDumperT(t)
 	v = d.DumpStr(data)
-	assert.Contains(t, v, "👻 hidden stringer")
+	assert.Contains(t, v, `-secret => 👻 hidden stringer`)
 }
