@@ -663,7 +663,6 @@ func TestTheKitchenSink(t *testing.T) {
 	// Ensure no panic occurred and a sane dump was produced
 	assert.Contains(t, out, "#")          // loosest
 	assert.Contains(t, out, "Everything") // middle-ground
-
 }
 
 func TestForceExportedFallback(t *testing.T) {
@@ -1047,5 +1046,16 @@ func TestDumpJSON(t *testing.T) {
 
 		assert.Equal(t, []any{"foo", float64(123), true}, got)
 	})
+}
 
+func TestDisableStringer(t *testing.T) {
+	data := hidden{secret: "not so secret"}
+
+	d := newDumperT(t, WithDisableStringer(true))
+	v := d.DumpStr(data)
+	require.Contains(t, v, `-secret => "not so secret"`)
+
+	d = newDumperT(t)
+	v = d.DumpStr(data)
+	assert.Contains(t, v, `-secret => 👻 hidden stringer`)
 }
