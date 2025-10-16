@@ -1,6 +1,6 @@
 //go:build windows
 
-package windowsansi
+package ansi
 
 import (
 	"os"
@@ -11,17 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	enableVirtualTerminalProcessing = 0x0004
-)
-
 // getConsoleMode is a helper to retrieve the current console mode for a given handle.
 func getConsoleMode(handle syscall.Handle) (uint32, error) {
 	var mode uint32
 	ret, _, err := syscall.NewLazyDLL("kernel32.dll").NewProc("GetConsoleMode").Call(uintptr(handle), uintptr(unsafe.Pointer(&mode)))
-	if ret == 0 {
-		// In Go 1.16+, err is not nil on failure. On older versions, it might be.
-		// So we return the error from the syscall call directly.
+	if ret == SYS_CALL_FAILURE {
+		// Note: err may be non-nil even on success, so we must check ret first.
 		return 0, err
 	}
 	return mode, nil
@@ -30,7 +25,7 @@ func getConsoleMode(handle syscall.Handle) (uint32, error) {
 // setConsoleMode is a helper to set the console mode for a given handle.
 func setConsoleMode(handle syscall.Handle, mode uint32) error {
 	ret, _, err := syscall.NewLazyDLL("kernel32.dll").NewProc("SetConsoleMode").Call(uintptr(handle), uintptr(mode))
-	if ret == 0 {
+	if ret == SYS_CALL_FAILURE {
 		return err
 	}
 	return nil
@@ -57,7 +52,8 @@ func TestEnable(t *testing.T) {
 	}
 
 	// Run the function we want to test.
-	Enable()
+	err = Enable()
+	require.NoError(t, err, "Enable() should not return an error in a real console")
 
 	// After running Enable(), check the console mode again to see if the flag was set.
 	newMode, err := getConsoleMode(handle)
