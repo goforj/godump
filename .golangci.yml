@@ -52,7 +52,7 @@ linters:
 
     maintidx:
       # higher = better
-      under: 20
+      under: 19
 
     misspell:
       locale: US
