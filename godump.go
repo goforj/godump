@@ -34,6 +34,7 @@ const (
 	defaultMaxItems        = 100
 	defaultMaxStringLen    = 100000
 	defaultMaxStackDepth   = 10
+	defaultShowHeader      = true
 	initialCallerSkip      = 2
 )
 
@@ -92,6 +93,7 @@ type Dumper struct {
 	writer             io.Writer
 	skippedStackFrames int
 	disableStringer    bool
+	showHeader         bool
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -167,6 +169,14 @@ func WithDisableStringer(b bool) Option {
 	}
 }
 
+// WithHeader configures whether to print the header with the call location.
+func WithHeader(show bool) Option {
+	return func(d *Dumper) *Dumper {
+		d.showHeader = show
+		return d
+	}
+}
+
 // NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
 func NewDumper(opts ...Option) *Dumper {
@@ -175,6 +185,7 @@ func NewDumper(opts ...Option) *Dumper {
 		maxItems:        defaultMaxItems,
 		maxStringLen:    defaultMaxStringLen,
 		disableStringer: defaultDisableStringer,
+		showHeader:      defaultShowHeader,
 		writer:          os.Stdout,
 		colorizer:       nil, // ensure no detection is made if we don't need it
 		callerFn:        runtime.Caller,
@@ -208,7 +219,9 @@ func DumpStr(vs ...any) string {
 // DumpStr returns a string representation of the values with colorized output.
 func (d *Dumper) DumpStr(vs ...any) string {
 	var sb strings.Builder
-	d.printDumpHeader(&sb)
+	if d.showHeader {
+		d.printDumpHeader(&sb)
+	}
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 	d.writeDump(tw, vs...)
 	tw.Flush()
