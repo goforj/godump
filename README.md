@@ -147,10 +147,13 @@ func main() {
 
 	// Custom Dumper with all options set explicitly
 	d := godump.NewDumper(
-		godump.WithMaxDepth(15),          // default: 15
-		godump.WithMaxItems(100),         // default: 100
-		godump.WithMaxStringLen(100000),  // default: 100000
-		godump.WithWriter(os.Stdout),     // default: os.Stdout
+		godump.WithMaxDepth(15),           // default: 15
+		godump.WithMaxItems(100),          // default: 100
+		godump.WithMaxStringLen(100000),   // default: 100000
+		godump.WithWriter(os.Stdout),      // default: os.Stdout
+		godump.WithSkipStackFrames(0),     // default: 0
+		godump.WithDisableStringer(false), // default: false
+		godump.WithHeader(true),           // default: true
 	)
 
 	// Use the custom dumper

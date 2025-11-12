@@ -1059,3 +1059,12 @@ func TestDisableStringer(t *testing.T) {
 	v = d.DumpStr(data)
 	assert.Contains(t, v, `-secret => 👻 hidden stringer`)
 }
+
+func TestWithHeader(t *testing.T) {
+	out := dumpStrT(t, "x")
+	assert.Contains(t, out, "<#dump //", "expected header to be present")
+
+	d := newDumperT(t, WithHeader(false))
+	out = d.DumpStr("x")
+	assert.NotContains(t, out, "<#dump //", "expected header to be disabled")
+}
