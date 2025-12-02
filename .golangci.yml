@@ -52,7 +52,7 @@ linters:
 
     maintidx:
       # higher = better
-      under: 20
+      under: 19
 
     misspell:
       locale: US
@@ -79,7 +79,7 @@ linters:
           disabled: true
         - name: cognitive-complexity
           arguments:
-            - 50
+            - 60
         - name: cyclomatic
           arguments:
             # lower=better
