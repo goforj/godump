@@ -186,14 +186,10 @@ func TestForceExported(t *testing.T) {
 
 func TestDetectColorVariants(t *testing.T) {
 	t.Run("no environment variables", func(t *testing.T) {
-		// The result depends on whether stdout is a real terminal during tests
-		// On Windows with PowerShell, it's usually true; on Unix with redirected output, it's false
-		result := detectColor()
-		isTerminalResult := isTerminal(os.Stdout)
-		t.Logf("detectColor() returned: %v, isTerminal(os.Stdout): %v", result, isTerminalResult)
-		
-		// The result should match what isTerminal returns for os.Stdout
-		assert.Equal(t, isTerminalResult, result)
+		assert.True(t, detectColor())
+
+		out := NewDumper().colorize(colorYellow, "test")
+		assert.Equal(t, "\x1b[33mtest\x1b[0m", out)
 	})
 
 	t.Run("forcing no color", func(t *testing.T) {
