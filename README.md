@@ -79,7 +79,7 @@ go get github.com/goforj/godump
 
 Simple example demonstrating core functionality:
 
-**Runnable example in ./examples/basic/main.go**
+<p align="center"> <a href="./examples/basic/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
 package main
