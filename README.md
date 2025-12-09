@@ -30,34 +30,29 @@
 
 ## 🤔 Why `godump`?
 
-Debugging Go data structures shouldn’t feel like a fight.
+Debugging Go data shouldn’t feel like deciphering noise.
 
-`fmt.Printf("%+v")` quickly becomes unreadable, `spew` prints too much, and `pp` focuses on color over structure. None of them answer the common questions you have while debugging:
+Traditional tools (`fmt.Printf`, `spew`, `pp`) often fall short:
 
-- *Where in the code did this dump come from?*
-- *Which fields are exported vs unexported?*
-- *Is this pointer part of a cycle?*
-- *Why does this huge struct look flat and noisy?*
-- *How do I see this nicely in a browser or HTML UI?*
+- Hard to read deeply nested structs
+- No visibility markers (exported vs unexported)
+- No file/line context to know *where* a dump came from
+- No cycle detection (infinite recursion danger)
+- No HTML output for browser-based debugging
+- No `dd()`-style dump-and-stop helper
 
-`godump` solves these problems with a clean, Laravel/Symfony-style debugging experience:
+`godump` gives you a clean, Laravel/Symfony-style debugging experience designed for **clarity**, **traceability**, and **zero configuration**:
 
-- precise file + line tracing
-- visibility markers (`+` / `-`) for fields
-- cycle-safe reference detection
-- beautiful indentation + type hints
-- HTML + JSON output options
-- and a `dd()` helper when you need to stop everything *now*
+### What `godump` provides
 
-All with **zero dependencies**.
-
-## ✨ Features
-
-- 🧠 Struct field inspection with visibility markers (`+`, `-`)
-- 🔄 Cycle-safe reference tracking
-- 🎨 ANSI color or HTML output
-- 🧪 Handles slices, maps, nested structs, pointers, time, etc.
-- 🪄 Control character escaping (`\n`, `\t`, etc.)
+- 🧭 **File + line tracing** for every dump
+- 🔐 **Visibility markers** (`+` exported, `-` unexported)
+- 🔄 **Cycle-safe reference tracking**
+- 🧠 **Readable, structured indentation**
+- 🎨 **Colorized terminal output** or **full HTML rendering**
+- 💥 **`Dd()` dump-and-exit** for emergency debugging
+- 🪄 **Control character escaping** (`\n`, `\t`, etc.)
+- 🧰 **Zero dependencies**, minimal API surface, and intuitive defaults
 
 ## Comparison: `godump` vs `go-spew` vs `pp`
 
