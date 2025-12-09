@@ -108,34 +108,11 @@ Simple example demonstrating core functionality:
 <p> <a href="./examples/basic/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
-package main
-
-import (
-	"github.com/goforj/godump"
-)
-
-type Profile struct {
-	Age   int
-	Email string
-}
-
-type User struct {
-	Name    string
-	Profile Profile
-}
-
-func main() {
-	user := User{
-		Name: "Alice",
-		Profile: Profile{
-			Age:   30,
-			Email: "alice@example.com",
-		},
-	}
-
-	// Pretty-print to stdout
-	godump.Dump(user)
-}
+type User struct { Name string }
+godump.Dump(User{Name: "Alice"})
+// #main.User {
+//    +Name => "Alice" #string
+// }	
 ```
 
 ## 🧪 Example Output
@@ -151,69 +128,15 @@ func main() {
 }
 ```
 
-## 🧰 Extended Functions Example
-
-Below are examples of all the different `godump` functions you can use to dump your data in various formats and outputs.
-
-* Pretty-print to stdout
-* Get dump as string
-* HTML for web UI output
-* Print JSON directly to stdout
-* Write to any `io.Writer` (e.g. file, buffer, logger)
-* Dump and exit
-
-<p> <a href="./examples/extended/main.go"><strong>View Full Runnable Example →</strong></a> </p>
+## 🧰 Extended Usage (Snippets)
 
 ```go
-package main
-
-import (
-	"fmt"
-	"os"
-	"strings"
-	"github.com/goforj/godump"
-)
-
-type Profile struct {
-	Age   int
-	Email string
-}
-
-type User struct {
-	Name    string
-	Profile Profile
-}
-
-func main() {
-	user := User{
-		Name: "Alice",
-		Profile: Profile{
-			Age:   30,
-			Email: "alice@example.com",
-		},
-	}
-
-	// Pretty-print to stdout
-	godump.Dump(user)
-
-	// Get dump as string
-	output := godump.DumpStr(user)
-	fmt.Println("str", output)
-
-	// HTML for web UI output
-	html := godump.DumpHTML(user)
-	fmt.Println("html", html)
-
-	// Print JSON directly to stdout
-	godump.DumpJSON(user)
-
-	// Write to any io.Writer (e.g. file, buffer, logger)
-	godump.Fdump(os.Stderr, user)
-
-	// Dump and exit
-	godump.Dd(user) // this will print the dump and exit the program 
-}
-```
+godump.DumpStr(v)      // return as string
+godump.DumpHTML(v)     // return HTML output
+godump.DumpJSON(v)     // print JSON directly
+godump.Fdump(w, v)     // write to io.Writer
+godump.Dd(v)           // dump + exit
+````
 
 ## 🏗️ Builder Options Usage
 
@@ -224,47 +147,18 @@ If you want to heavily customize the dumper behavior, you can create a `Dumper` 
 <p> <a href="./examples/builder/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
-user := User{
-    Name: "Alice",
-    Profile: Profile{
-        Age:   30,
-        Email: "alice@example.com",
-    },
-}
-
 // Custom Dumper with all options set explicitly
 d := godump.NewDumper(
     godump.WithMaxDepth(15),           // default: 15
     godump.WithMaxItems(100),          // default: 100
     godump.WithMaxStringLen(100000),   // default: 100000
     godump.WithWriter(os.Stdout),      // default: os.Stdout
-	godump.WithSkipStackFrames(10),    // default: 10
-	godump.WithDisableStringer(false), // default: false
+    godump.WithSkipStackFrames(10),    // default: 10
+    godump.WithDisableStringer(false), // default: false
 )
 
 // Use the custom dumper
 d.Dump(user)
-
-// Dump to string
-out := d.DumpStr(user)
-fmt.Printf("DumpStr output:\n%s\n", out)
-
-// Dump to HTML string
-html := d.DumpHTML(user)
-fmt.Printf("DumpHTML output:\n%s\n", html)
-
-// Dump JSON using the Dumper (returns string)
-jsonStr := d.DumpJSONStr(user)
-fmt.Printf("Dumper JSON string:\n%s\n", jsonStr)
-
-// Print JSON directly from the Dumper
-d.DumpJSON(user)
-
-// Dump to custom writer (e.g. a string builder)
-var sb strings.Builder
-custom := godump.NewDumper(godump.WithWriter(&sb))
-custom.Dump(user)
-fmt.Printf("Dump to string builder:\n%s\n", sb.String())
 ```
 
 <details>
