@@ -92,15 +92,6 @@ If you'd like to suggest improvements or additional comparisons, feel free to op
 go get github.com/goforj/godump
 ````
 
-## 📁 Full Examples Directory
-
-All runnable examples can be found under [`./examples`](./examples):
-
-- **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
-- **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
-- **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
-- **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
-
 ## 🚀 Basic Usage
 
 Simple example demonstrating core functionality:
@@ -113,19 +104,6 @@ godump.Dump(User{Name: "Alice"})
 // #main.User {
 //    +Name => "Alice" #string
 // }	
-```
-
-## 🧪 Example Output
-
-```go
-<#dump // main.go:26
-#main.User
-  +Name    => "Alice"
-  +Profile => #main.Profile
-    +Age   => 30
-    +Email => "alice@example.com"
-  }
-}
 ```
 
 ## 🧰 Extended Usage (Snippets)
@@ -160,6 +138,15 @@ d := godump.NewDumper(
 // Use the custom dumper
 d.Dump(user)
 ```
+
+## 📁 Full Examples Directory
+
+All runnable examples can be found under [`./examples`](./examples):
+
+- **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
+- **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
+- **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
+- **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
 
 <details>
 <summary><strong>📘 How to Read the Output</strong></summary>
