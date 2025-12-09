@@ -89,4 +89,65 @@ func main() {
 	val.Recursive.Self = val.Recursive // cycle
 
 	godump.Dump(val)
+	// #main.Everything {
+	//  +String      => "test" #string
+	//  +Bool        => true #bool
+	//  +Int         => 42 #int
+	//  +Float       => 3.141500 #float64
+	//  +Time        => 2025-12-09 17:57:25.585793 -0600 CST m=+0.000045251 #time.Time
+	//  +Duration    => 20m0s #time.Duration
+	//  +Friendly    => 00:20:00 #main.FriendlyDuration
+	//  +PtrString   => "Hello" #*string
+	//  +PtrDuration => 20m0s #*time.Duration
+	//  +SliceInts   => #[]int [
+	//    0 => 1 #int
+	//    1 => 2 #int
+	//    2 => 3 #int
+	//  ]
+	//  +ArrayStrings => #[2]string [
+	//    0 => "foo" #string
+	//    1 => "bar" #string
+	//  ]
+	//  +MapValues => #map[string]int {
+	//     a => 1 #int
+	//     b => 2 #int
+	//  }
+	//  +Nested  => #main.Inner {
+	//    +ID    => 10 #int
+	//    +Notes => #[]string [
+	//      0 => "alpha" #string
+	//      1 => "beta" #string
+	//    ]
+	//    +Blob => ([]uint8) (len=25 cap=25) {
+	//      00000000  7b 22 6b 69 6e 64 22 3a  22 74 65 73 74 22 2c 22  | {"kind":"test"," |
+	//      00000010  6f 6b 22 3a 74 72 75 65  7d                       | ok":true}        |
+	//    }
+	//  }
+	//  +NestedPtr => #*main.Inner {
+	//    +ID      => 99 #int
+	//    +Notes   => #[]string [
+	//      0 => "x" #string
+	//      1 => "y" #string
+	//    ]
+	//    +Blob => ([]uint8) (len=28 cap=28) {
+	//      00000000  7b 22 6d 73 67 22 3a 22  68 69 22 2c 22 73 74 61  | {"msg":"hi","sta |
+	//      00000010  74 75 73 22 3a 22 63 6f  6f 6c 22 7d              | tus":"cool"}     |
+	//    }
+	//  }
+	//  +Interface => #map[string]bool {
+	//     ok => true #bool
+	//  }
+	//  +InterfaceImpl => 0001-01-01 00:00:00 +0000 UTC #main.IsZeroer
+	//  +Recursive     => #*main.Ref {
+	//    +Self        => ↩︎ &3
+	//  }
+	//  -privateField  => "should show" #string
+	//  -privateStruct => #main.Inner {
+	//    +ID          => 5 #int
+	//    +Notes       => #[]string [
+	//      0 => "private" #string
+	//    ]
+	//    +Blob => []uint8(nil)
+	//  }
+	// }
 }

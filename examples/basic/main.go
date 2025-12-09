@@ -28,4 +28,11 @@ func main() {
 
 	// Pretty-print to stdout
 	godump.Dump(user)
+	// #main.User {
+	//  +Name    => "Alice" #string
+	//  +Profile => #main.Profile {
+	//    +Age   => 30 #int
+	//    +Email => "alice@example.com" #string
+	//  }
+	// }
 }
