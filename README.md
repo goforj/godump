@@ -18,27 +18,6 @@
     Inspired by Symfony's VarDumper which is used in Laravel's tools like <code>dump()</code> and <code>dd()</code>.
 </p>
 
-<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
-
-- [Why `godump`?](#why-godump)
-    * [What `godump` provides](#what-godump-provides)
-- [📊 Comparison: `godump` vs `go-spew` vs `pp`](#-comparison-godump-vs-go-spew-vs-pp)
-- [📦 Installation](#-installation)
-- [🚀 Basic Usage](#-basic-usage)
-- [🧰 Extended Usage (Snippets)](#-extended-usage-snippets)
-- [🏗️ Builder Options Usage](#-builder-options-usage)
-- [📁 Full Examples Directory](#-full-examples-directory)
-    * [🧭 Location Header](#-location-header)
-    * [🔎 Type Names](#-type-names)
-    * [🔐 Visibility Markers](#-visibility-markers)
-    * [🔄 Cyclic References](#-cyclic-references)
-    * [🔢 Slices and Maps](#-slices-and-maps)
-    * [🔣 Escaped Characters](#-escaped-characters)
-    * [🧩 Supported Types](#-supported-types)
-- [🧩 License](#-license)
-
-<!-- TOC end -->
-
 <p align="center">
 <strong>Terminal Output Example (Kitchen Sink)</strong><br>
   <img src="docs/demo-terminal-2.png" alt="Terminal output example kitchen sink">
@@ -48,6 +27,22 @@
 <strong>HTML Output Example</strong><br>
   <img src="docs/demo-html.png" alt="HTML output example">
 </p>
+
+<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
+
+## Table of Contents
+
+- [Why `godump`?](#why-godump)
+  * [What `godump` provides](#what-godump-provides)
+- [📊 Comparison: `godump` vs `go-spew` vs `pp`](#-comparison-godump-vs-go-spew-vs-pp)
+- [📦 Installation](#-installation)
+- [🚀 Basic Usage](#-basic-usage)
+- [🧰 Extended Usage (Snippets)](#-extended-usage-snippets)
+- [🏗️ Builder Options Usage](#-builder-options-usage)
+- [📁 Full Examples Directory](#-full-examples-directory)
+- [🧩 License](#-license)
+
+<!-- TOC end -->
 
 ## Why `godump`?
 
