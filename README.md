@@ -142,7 +142,7 @@ func main() {
 }
 ```
 
-## 🚰 The Kitchen Sink Example
+## 🧰 Extended Functions Example
 
 Below are examples of all the different `godump` functions you can use to dump your data in various formats and outputs.
 
@@ -153,7 +153,7 @@ Below are examples of all the different `godump` functions you can use to dump y
 * Write to any `io.Writer` (e.g. file, buffer, logger)
 * Dump and exit
 
-<p> <a href="./examples/kitchensink/main.go"><strong>View Full Runnable Example →</strong></a> </p>
+<p> <a href="./examples/extended/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
 package main
@@ -263,6 +263,7 @@ fmt.Printf("Dump to string builder:\n%s\n", sb.String())
 All runnable examples can be found under [`./examples`](./examples):
 
 - **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
+- **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
 - **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
 - **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
 

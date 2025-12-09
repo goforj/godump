@@ -5,92 +5,88 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/goforj/godump"
+	"time"
 )
 
-type Profile struct {
-	Age   int
-	Email string
-}
+type FriendlyDuration time.Duration
 
-type User struct {
-	Name    string
-	Profile Profile
+func (fd FriendlyDuration) String() string {
+	td := time.Duration(fd)
+	return fmt.Sprintf("%02d:%02d:%02d", int(td.Hours()), int(td.Minutes())%60, int(td.Seconds())%60)
 }
 
 func main() {
-	user := User{
-		Name: "Alice",
-		Profile: Profile{
-			Age:   30,
-			Email: "alice@example.com",
-		},
+	type IsZeroer interface {
+		IsZero() bool
 	}
 
-	// Basic pretty-print
-	godump.Dump(user)
-	// #main.User {
-	//  +Name    => "Alice" #string
-	//  +Profile => #main.Profile {
-	//    +Age   => 30 #int
-	//    +Email => "alice@example.com" #string
-	//  }
-	// }
+	type Inner struct {
+		ID    int
+		Notes []string
+		Blob  []byte
+	}
 
-	// As string
-	strOut := godump.DumpStr(user)
-	fmt.Println("DumpStr:", strOut)
-	// #main.User {
-	//  +Name    => "Alice" #string
-	//  +Profile => #main.Profile {
-	//    +Age   => 30 #int
-	//    +Email => "alice@example.com" #string
-	//  }
-	// }
+	type Ref struct {
+		Self *Ref
+	}
 
-	// As HTML
-	htmlOut := godump.DumpHTML(user)
-	fmt.Println("DumpHTML:", htmlOut)
-	// <div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">
-	// <span style="color:#999"><#dump // examples/kitchensink/main.go:40</span>
-	// <span style="color:#999">#main.User</span> {
-	//  <span style="color:#ffb400">+</span>Name    => <span style="color:#ffb400">"</span><span style="color:#80ff80">Alice</span><span style="color:#ffb400">"</span><span style="color:#999"> #string</span>
-	//  <span style="color:#ffb400">+</span>Profile => <span style="color:#999">#main.Profile</span> {
-	//    <span style="color:#ffb400">+</span>Age   => <span style="color:#40c0ff">30</span><span style="color:#999"> #int</span>
-	//    <span style="color:#ffb400">+</span>Email => <span style="color:#ffb400">"</span><span style="color:#80ff80">alice@example.com</span><span style="color:#ffb400">"</span><span style="color:#999"> #string</span>
-	//  }
-	// }
+	type Everything struct {
+		String        string
+		Bool          bool
+		Int           int
+		Float         float64
+		Time          time.Time
+		Duration      time.Duration
+		Friendly      FriendlyDuration
+		PtrString     *string
+		PtrDuration   *time.Duration
+		SliceInts     []int
+		ArrayStrings  [2]string
+		MapValues     map[string]int
+		Nested        Inner
+		NestedPtr     *Inner
+		Interface     any
+		InterfaceImpl IsZeroer
+		Recursive     *Ref
+		privateField  string
+		privateStruct Inner
+	}
 
-	// As JSON
-	godump.DumpJSON(user)
-	// {
-	//  "Name": "Alice",
-	//  "Profile": {
-	//    "Age": 30,
-	//    "Email": "alice@example.com"
-	//  }
-	// }
+	now := time.Now()
+	ptrStr := "Hello"
+	dur := time.Minute * 20
 
-	// Write to any io.Writer
-	godump.Fdump(os.Stderr, user)
-	// #main.User {
-	//  +Name    => "Alice" #string
-	//  +Profile => #main.Profile {
-	//    +Age   => 30 #int
-	//    +Email => "alice@example.com" #string
-	//  }
-	// }
+	val := Everything{
+		String:       "test",
+		Bool:         true,
+		Int:          42,
+		Float:        3.1415,
+		Time:         now,
+		Duration:     dur,
+		Friendly:     FriendlyDuration(dur),
+		PtrString:    &ptrStr,
+		PtrDuration:  &dur,
+		SliceInts:    []int{1, 2, 3},
+		ArrayStrings: [2]string{"foo", "bar"},
+		MapValues:    map[string]int{"a": 1, "b": 2},
+		Nested: Inner{
+			ID:    10,
+			Notes: []string{"alpha", "beta"},
+			Blob:  []byte(`{"kind":"test","ok":true}`),
+		},
+		NestedPtr: &Inner{
+			ID:    99,
+			Notes: []string{"x", "y"},
+			Blob:  []byte(`{"msg":"hi","status":"cool"}`),
+		},
+		Interface:     map[string]bool{"ok": true},
+		InterfaceImpl: time.Time{},
+		Recursive:     &Ref{},
+		privateField:  "should show",
+		privateStruct: Inner{ID: 5, Notes: []string{"private"}},
+	}
+	val.Recursive.Self = val.Recursive // cycle
 
-	// Dump and exit
-	godump.Dd(user)
-	// <#dump // examples/kitchensink/main.go:47
-	// #main.User {
-	//  +Name    => "Alice" #string
-	//  +Profile => #main.Profile {
-	//    +Age   => 30 #int
-	//    +Email => "alice@example.com" #string
-	//  }
-	// }
+	godump.Dump(val)
 }
