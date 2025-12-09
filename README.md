@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-    Pretty-print and debug Go structs with a Laravel-inspired developer experience.
+    Pretty-print and debug Go data with a Laravel/Symfony-style developer experience - with colorized output, HTML dumps, cyclic reference detection, and a dd()-style dump-and-die.
 </p>
 
 <p align="center">
@@ -26,13 +26,25 @@
 
 <p align="center">
 <strong>Terminal Output Example (Kitchen Sink)</strong><br>
-  <img src="./assets/demo-terminal-2.png">
+  <img src="./assets/demo-terminal-2.png" alt="Terminal output example kitchen sink">
 </p>
 
 <p align="center">
 <strong>HTML Output Example</strong><br>
-  <img src="./assets/demo-html.png">
+  <img src="./assets/demo-html.png" alt="HTML output example">
 </p>
+
+## 🤔 Why `godump`?
+
+Go’s built-in formatting tools (`fmt.Printf`, `%+v`) and reflection-based printers like `spew` or `pp` are helpful, but they lack:
+
+- structured indentation,
+- visibility markers,
+- file/line tracing,
+- HTML output,
+- and a `dd()` dump-and-exit helper.
+
+`godump` brings a polished, Laravel/Symfony-style debugging experience to Go - without dependencies.
 
 ## ✨ Features
 
@@ -240,6 +252,14 @@ custom := godump.NewDumper(godump.WithWriter(&sb))
 custom.Dump(user)
 fmt.Printf("Dump to string builder:\n%s\n", sb.String())
 ```
+
+## 📁 Full Examples Directory
+
+All runnable examples can be found under [`./examples`](./examples):
+
+- **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
+- **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
+- **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
 
 <details>
 <summary><strong>📘 How to Read the Output</strong></summary>
