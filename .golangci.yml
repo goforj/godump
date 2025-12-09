@@ -1,5 +1,9 @@
 version: "2"
 
+run:
+  skip-dirs:
+    - examples
+
 linters:
   default: all
   disable:
