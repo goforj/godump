@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/godump.png" width="600" alt="godump – pretty print Go structs and debugging tool similar to Laravel's dump() dd()">
+  <img src="./assets/godump.png" width="600" alt="godump logo – Go pretty printer and Laravel-style dump/dd debugging tool">
 </p>
 
 <p align="center">
@@ -18,26 +18,14 @@
     Inspired by Symfony's VarDumper which is used in Laravel's tools like <code>dump()</code> and <code>dd()</code>.
 </p>
 
-<br>
-
-<p align="center">
-<strong>Terminal Output Example (Kitchen Sink)</strong><br>
-  <img src="./assets/demo-terminal-2.png" alt="Terminal output example kitchen sink">
-</p>
-
-<p align="center">
-<strong>HTML Output Example</strong><br>
-  <img src="./assets/demo-html.png" alt="HTML output example">
-</p>
-
 ## 🤔 Why `godump`?
 
 Go’s built-in formatting tools (`fmt.Printf`, `%+v`) and reflection-based printers like `spew` or `pp` are helpful, but they lack:
 
-- structured indentation,
-- visibility markers,
-- file/line tracing,
-- HTML output,
+- structured indentation
+- visibility markers
+- file/line tracing
+- HTML output
 - and a `dd()` dump-and-exit helper.
 
 `godump` brings a polished, Laravel/Symfony-style debugging experience to Go - without dependencies.
@@ -76,6 +64,18 @@ Go’s built-in formatting tools (`fmt.Printf`, `%+v`) and reflection-based prin
 | **Output style**                                                       | Human-first | Reflection-first |  Color-first  |
 
 If you'd like to suggest improvements or additional comparisons, feel free to open an issue or PR.
+
+## Screenshots
+
+<p align="center">
+<strong>Terminal Output Example (Kitchen Sink)</strong><br>
+  <img src="./assets/demo-terminal-2.png" alt="Terminal output example kitchen sink">
+</p>
+
+<p align="center">
+<strong>HTML Output Example</strong><br>
+  <img src="./assets/demo-html.png" alt="HTML output example">
+</p>
 
 ## 📦 Installation
 
