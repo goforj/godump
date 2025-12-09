@@ -18,17 +18,38 @@
     Inspired by Symfony's VarDumper which is used in Laravel's tools like <code>dump()</code> and <code>dd()</code>.
 </p>
 
+<p align="center">
+<strong>Terminal Output Example (Kitchen Sink)</strong><br>
+  <img src="./assets/demo-terminal-2.png" alt="Terminal output example kitchen sink">
+</p>
+
+<p align="center">
+<strong>HTML Output Example</strong><br>
+  <img src="./assets/demo-html.png" alt="HTML output example">
+</p>
+
 ## 🤔 Why `godump`?
 
-Go’s built-in formatting tools (`fmt.Printf`, `%+v`) and reflection-based printers like `spew` or `pp` are helpful, but they lack:
+Debugging Go data structures shouldn’t feel like a fight.
 
-- structured indentation
-- visibility markers
-- file/line tracing
-- HTML output
-- and a `dd()` dump-and-exit helper.
+`fmt.Printf("%+v")` quickly becomes unreadable, `spew` prints too much, and `pp` focuses on color over structure. None of them answer the common questions you have while debugging:
 
-`godump` brings a polished, Laravel/Symfony-style debugging experience to Go - without dependencies.
+- *Where in the code did this dump come from?*
+- *Which fields are exported vs unexported?*
+- *Is this pointer part of a cycle?*
+- *Why does this huge struct look flat and noisy?*
+- *How do I see this nicely in a browser or HTML UI?*
+
+`godump` solves these problems with a clean, Laravel/Symfony-style debugging experience:
+
+- precise file + line tracing
+- visibility markers (`+` / `-`) for fields
+- cycle-safe reference detection
+- beautiful indentation + type hints
+- HTML + JSON output options
+- and a `dd()` helper when you need to stop everything *now*
+
+All with **zero dependencies**.
 
 ## ✨ Features
 
@@ -64,18 +85,6 @@ Go’s built-in formatting tools (`fmt.Printf`, `%+v`) and reflection-based prin
 | **Output style**                                                       | Human-first | Reflection-first |  Color-first  |
 
 If you'd like to suggest improvements or additional comparisons, feel free to open an issue or PR.
-
-## Screenshots
-
-<p align="center">
-<strong>Terminal Output Example (Kitchen Sink)</strong><br>
-  <img src="./assets/demo-terminal-2.png" alt="Terminal output example kitchen sink">
-</p>
-
-<p align="center">
-<strong>HTML Output Example</strong><br>
-  <img src="./assets/demo-html.png" alt="HTML output example">
-</p>
 
 ## 📦 Installation
 
