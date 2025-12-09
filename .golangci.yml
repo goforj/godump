@@ -115,8 +115,8 @@ linters:
       allow-trailing-comment: true
 
   exclusions:
-    rules:
-      - path-except: '(.+)_test\.go'
+    paths:
+      - examples
     presets:
       - common-false-positives
       - legacy
