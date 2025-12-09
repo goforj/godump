@@ -115,6 +115,8 @@ linters:
       allow-trailing-comment: true
 
   exclusions:
+    rules:
+      - path-except: '(.+)_test\.go'
     presets:
       - common-false-positives
       - legacy
@@ -123,8 +125,6 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-dirs:
-    - examples
 
 formatters:
   settings:
