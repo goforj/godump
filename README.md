@@ -92,6 +92,15 @@ If you'd like to suggest improvements or additional comparisons, feel free to op
 go get github.com/goforj/godump
 ````
 
+## 📁 Full Examples Directory
+
+All runnable examples can be found under [`./examples`](./examples):
+
+- **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
+- **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
+- **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
+- **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
+
 ## 🚀 Basic Usage
 
 Simple example demonstrating core functionality:
@@ -257,15 +266,6 @@ custom := godump.NewDumper(godump.WithWriter(&sb))
 custom.Dump(user)
 fmt.Printf("Dump to string builder:\n%s\n", sb.String())
 ```
-
-## 📁 Full Examples Directory
-
-All runnable examples can be found under [`./examples`](./examples):
-
-- **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
-- **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
-- **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
-- **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
 
 <details>
 <summary><strong>📘 How to Read the Output</strong></summary>
