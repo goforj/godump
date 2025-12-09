@@ -28,17 +28,6 @@
   <img src="docs/demo-html.png" alt="HTML output example">
 </p>
 
-## ✨ Features
-
-- 🧭 **File + line tracing** for every dump
-- 🔐 **Visibility markers** (`+` exported, `-` unexported)
-- 🔄 **Cycle-safe reference tracking**
-- 🧠 **Readable, structured indentation**
-- 🎨 **Colorized terminal output** or **full HTML rendering**
-- 💥 **`Dd()` dump-and-exit** for emergency debugging
-- 🪄 **Control character escaping** (`\n`, `\t`, etc.)
-- 🧰 **Zero dependencies**, minimal API surface, and intuitive defaults
-
 ## 📊 Comparison: `godump` vs `go-spew` vs `pp`
 
 | Feature                                                                | **godump** | **go-spew** | **pp** |
