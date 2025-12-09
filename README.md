@@ -55,29 +55,27 @@ Traditional tools (`fmt.Printf`, `spew`, `pp`) often fall short:
 - 🧰 **Zero dependencies**, minimal API surface, and intuitive defaults
 
 ## 📊 Comparison: `godump` vs `go-spew` vs `pp`
-
-| Feature                                                                | **godump**  |   **go-spew**    |    **pp**     |
-|------------------------------------------------------------------------|:-----------:|:----------------:|:-------------:|
-| **Zero dependencies**                                                  |      ✅      |        ❌         |       ❌       |
-| **Colorized terminal output**                                          |   ✅ Rich    |     ✅ Basic      |    ✅ Good     |
-| **HTML output**                                                        |      ✅      |        ❌         |       ❌       |
-| **JSON output helpers** (`DumpJSON`, `DumpJSONStr`)                    |      ✅      |        ❌         |       ❌       |
-| **Dump to `io.Writer`**                                                |      ✅      |        ✅         |       ✅       |
-| **Shows file + line number of dump call**                              |      ✅      |        ❌         |       ❌       |
-| **Cyclic reference detection**                                         | ✅ Advanced  |    ⚠️ Partial    |       ❌       |
-| **Handles unexported struct fields**                                   |      ✅      |        ✅         |       ✅       |
-| **Visibility markers (`+` / `-`)**                                     |      ✅      |        ❌         |       ❌       |
-| **Max depth control**                                                  |      ✅      |        ❌         |       ❌       |
-| **Max items (slice/map truncation)**                                   |      ✅      |        ❌         |       ❌       |
-| **Max string length truncation**                                       |      ✅      |        ❌         |       ❌       |
-| **Dump & Die (`dd()` equivalent)**                                     |      ✅      |        ❌         |       ❌       |
-| **Control character escaping**                                         |      ✅      |    ⚠️ Partial    |  ⚠️ Partial   |
-| **Supports structs, maps, slices, pointers, interfaces**               |      ✅      |        ✅         |       ✅       |
-| **Pretty type name rendering (`#package.Type`)**                       |      ✅      |        ❌         |       ❌       |
-| **Builder-style configuration API**                                    |      ✅      |        ❌         |       ❌       |
-| **Test-friendly string output** (`DumpStr`, `DumpHTML`, `DumpJSONStr`) |      ✅      |   ✅ (`Sdump`)    | ✅ (`Sprintf`) |
-| **HTML / Web UI debugging support**                                    |      ✅      |        ❌         |       ❌       |
-| **Output style**                                                       | Human-first | Reflection-first |  Color-first  |
+| Feature                                                                | **godump** | **go-spew** | **pp** |
+|------------------------------------------------------------------------|:----------:|:-----------:|:------:|
+| **Zero dependencies**                                                  |     ✅      |      ❌      |   ❌    |
+| **Colorized terminal output**                                          |     ✅      |      ✅      |   ✅    |
+| **HTML output**                                                        |     ✅      |      ❌      |   ❌    |
+| **JSON output helpers** (`DumpJSON`, `DumpJSONStr`)                    |     ✅      |      ❌      |   ❌    |
+| **Dump to `io.Writer`**                                                |     ✅      |      ✅      |   ✅    |
+| **Shows file + line number of dump call**                              |     ✅      |      ❌      |   ❌    |
+| **Cyclic reference detection**                                         |     ✅      |      ⚠️      |   ❌    |
+| **Handles unexported struct fields**                                   |     ✅      |      ✅      |   ✅    |
+| **Visibility markers (`+` / `-`)**                                     |     ✅      |      ❌      |   ❌    |
+| **Max depth control**                                                  |     ✅      |      ❌      |   ❌    |
+| **Max items (slice/map truncation)**                                   |     ✅      |      ❌      |   ❌    |
+| **Max string length truncation**                                       |     ✅      |      ❌      |   ❌    |
+| **Dump & Die (`dd()` equivalent)**                                     |     ✅      |      ❌      |   ❌    |
+| **Control character escaping**                                         |     ✅      |      ⚠️      |   ⚠️    |
+| **Supports structs, maps, slices, pointers, interfaces**               |     ✅      |      ✅      |   ✅    |
+| **Pretty type name rendering (`#package.Type`)**                       |     ✅      |      ❌      |   ❌    |
+| **Builder-style configuration API**                                    |     ✅      |      ❌      |   ❌    |
+| **Test-friendly string output** (`DumpStr`, `DumpHTML`, `DumpJSONStr`) |     ✅      |      ✅      |   ✅    |
+| **HTML / Web UI debugging support**                                    |     ✅      |      ❌      |   ❌    |
 
 If you'd like to suggest improvements or additional comparisons, feel free to open an issue or PR.
 
