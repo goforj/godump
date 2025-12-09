@@ -86,17 +86,16 @@ godump.Dump(User{Name: "Alice"})
 ## 🧰 Extended Usage (Snippets)
 
 ```go
-godump.DumpStr(v) // return as string
+godump.DumpStr(v)  // return as string
 godump.DumpHTML(v) // return HTML output
 godump.DumpJSON(v) // print JSON directly
 godump.Fdump(w, v) // write to io.Writer
-godump.Dd(v) // dump + exit
+godump.Dd(v)       // dump + exit
 ````
 
 ## 🏗️ Builder Options Usage
 
-`godump` aims for simple usage with sensible defaults out of the box, but also provides a flexible builder-style API for
-customization.
+`godump` aims for simple usage with sensible defaults out of the box, but also provides a flexible builder-style API for customization.
 
 If you want to heavily customize the dumper behavior, you can create a `Dumper` instance with specific options:
 
@@ -104,12 +103,12 @@ If you want to heavily customize the dumper behavior, you can create a `Dumper` 
 
 ```go
 godump.NewDumper(
-godump.WithMaxDepth(15),           // default: 15
-godump.WithMaxItems(100),          // default: 100
-godump.WithMaxStringLen(100000), // default: 100000
-godump.WithWriter(os.Stdout), // default: os.Stdout
-godump.WithSkipStackFrames(10),    // default: 10
-godump.WithDisableStringer(false), // default: false
+    godump.WithMaxDepth(15),           // default: 15
+    godump.WithMaxItems(100),          // default: 100
+    godump.WithMaxStringLen(100000),   // default: 100000
+    godump.WithWriter(os.Stdout),      // default: os.Stdout
+    godump.WithSkipStackFrames(10),    // default: 10
+    godump.WithDisableStringer(false), // default: false
 ).Dump(v)
 ```
 
@@ -149,8 +148,8 @@ All runnable examples can be found under [`./examples`](./examples):
 ### 🔐 Visibility Markers
 
 ```go
-  +Name = > "Alice"
--secret = > "..."
+  +Name => "Alice"
+  -secret  => "..."
 ```
 
 * `+` → Exported (public) field
@@ -170,8 +169,8 @@ If a pointer has already been printed:
 ### 🔢 Slices and Maps
 
 ```go
-  0 = > "value"
-a = > 1
+  0 => "value"
+  a => 1
 ```
 
 * Array/slice indices and map keys are shown with `=>` formatting and indentation
