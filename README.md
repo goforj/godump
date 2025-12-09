@@ -94,8 +94,6 @@ go get github.com/goforj/godump
 
 ## 🚀 Basic Usage
 
-Simple example demonstrating core functionality:
-
 <p> <a href="./examples/basic/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
@@ -109,11 +107,11 @@ godump.Dump(User{Name: "Alice"})
 ## 🧰 Extended Usage (Snippets)
 
 ```go
-godump.DumpStr(v)      // return as string
-godump.DumpHTML(v)     // return HTML output
-godump.DumpJSON(v)     // print JSON directly
-godump.Fdump(w, v)     // write to io.Writer
-godump.Dd(v)           // dump + exit
+godump.DumpStr(v)  // return as string
+godump.DumpHTML(v) // return HTML output
+godump.DumpJSON(v) // print JSON directly
+godump.Fdump(w, v) // write to io.Writer
+godump.Dd(v)       // dump + exit
 ````
 
 ## 🏗️ Builder Options Usage
@@ -125,18 +123,14 @@ If you want to heavily customize the dumper behavior, you can create a `Dumper` 
 <p> <a href="./examples/builder/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
-// Custom Dumper with all options set explicitly
-d := godump.NewDumper(
+godump.NewDumper(
     godump.WithMaxDepth(15),           // default: 15
     godump.WithMaxItems(100),          // default: 100
     godump.WithMaxStringLen(100000),   // default: 100000
     godump.WithWriter(os.Stdout),      // default: os.Stdout
     godump.WithSkipStackFrames(10),    // default: 10
     godump.WithDisableStringer(false), // default: false
-)
-
-// Use the custom dumper
-d.Dump(user)
+).Dump(v)
 ```
 
 ## 📁 Full Examples Directory
