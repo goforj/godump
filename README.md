@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/godump.png" width="600" alt="godump logo – Go pretty printer and Laravel-style dump/dd debugging tool">
+  <img src="docs/godump.png" width="600" alt="godump logo – Go pretty printer and Laravel-style dump/dd debugging tool">
 </p>
 
 <p align="center">
@@ -20,12 +20,12 @@
 
 <p align="center">
 <strong>Terminal Output Example (Kitchen Sink)</strong><br>
-  <img src="./assets/demo-terminal-2.png" alt="Terminal output example kitchen sink">
+  <img src="docs/demo-terminal-2.png" alt="Terminal output example kitchen sink">
 </p>
 
 <p align="center">
 <strong>HTML Output Example</strong><br>
-  <img src="./assets/demo-html.png" alt="HTML output example">
+  <img src="docs/demo-html.png" alt="HTML output example">
 </p>
 
 ## 🤔 Why `godump`?
