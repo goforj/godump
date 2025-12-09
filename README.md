@@ -244,6 +244,8 @@ fmt.Printf("Dump to string builder:\n%s\n", sb.String())
 <details>
 <summary><strong>📘 How to Read the Output</strong></summary>
 
+<br>
+
 `godump` output is designed for clarity and traceability. Here's how to interpret its structure:
 
 ### 🧭 Location Header
