@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/godump.png" width="600" alt="godump logo">
+  <img src="./assets/godump.png" width="600" alt="godump – pretty print Go structs and debugging tool similar to Laravel's dump() dd()">
 </p>
 
 <p align="center">
@@ -42,6 +42,33 @@
 - 🧪 Handles slices, maps, nested structs, pointers, time, etc.
 - 🪄 Control character escaping (`\n`, `\t`, etc.)
 
+### Comparison: `godump` vs `go-spew` vs `pp`
+
+| Feature                                                                | **godump**  |   **go-spew**    |    **pp**     |
+|------------------------------------------------------------------------|:-----------:|:----------------:|:-------------:|
+| **Zero dependencies**                                                  |      ✅      |        ❌         |       ❌       |
+| **Colorized terminal output**                                          |   ✅ Rich    |     ✅ Basic      |    ✅ Good     |
+| **HTML output**                                                        |      ✅      |        ❌         |       ❌       |
+| **JSON output helpers** (`DumpJSON`, `DumpJSONStr`)                    |      ✅      |        ❌         |       ❌       |
+| **Dump to `io.Writer`**                                                |      ✅      |        ✅         |       ✅       |
+| **Shows file + line number of dump call**                              |      ✅      |        ❌         |       ❌       |
+| **Cyclic reference detection**                                         | ✅ Advanced  |    ⚠️ Partial    |       ❌       |
+| **Handles unexported struct fields**                                   |      ✅      |        ✅         |       ✅       |
+| **Visibility markers (`+` / `-`)**                                     |      ✅      |        ❌         |       ❌       |
+| **Max depth control**                                                  |      ✅      |        ❌         |       ❌       |
+| **Max items (slice/map truncation)**                                   |      ✅      |        ❌         |       ❌       |
+| **Max string length truncation**                                       |      ✅      |        ❌         |       ❌       |
+| **Dump & Die (`dd()` equivalent)**                                     |      ✅      |        ❌         |       ❌       |
+| **Control character escaping**                                         |      ✅      |    ⚠️ Partial    |  ⚠️ Partial   |
+| **Supports structs, maps, slices, pointers, interfaces**               |      ✅      |        ✅         |       ✅       |
+| **Pretty type name rendering (`#package.Type`)**                       |      ✅      |        ❌         |       ❌       |
+| **Builder-style configuration API**                                    |      ✅      |        ❌         |       ❌       |
+| **Test-friendly string output** (`DumpStr`, `DumpHTML`, `DumpJSONStr`) |      ✅      |   ✅ (`Sdump`)    | ✅ (`Sprintf`) |
+| **HTML / Web UI debugging support**                                    |      ✅      |        ❌         |       ❌       |
+| **Output style**                                                       | Human-first | Reflection-first |  Color-first  |
+
+If you find that anything in this table is inaccurate, please bring it to my attention by opening an issue so we can make sure the comparison is correct.
+
 ## 📦 Installation
 
 ```bash
@@ -49,6 +76,70 @@ go get github.com/goforj/godump
 ````
 
 ## 🚀 Basic Usage
+
+Simple example demonstrating core functionality:
+
+**Runnable example in ./examples/basic/main.go**
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+	"github.com/goforj/godump"
+)
+
+type Profile struct {
+	Age   int
+	Email string
+}
+
+type User struct {
+	Name    string
+	Profile Profile
+}
+
+func main() {
+	user := User{
+		Name: "Alice",
+		Profile: Profile{
+			Age:   30,
+			Email: "alice@example.com",
+		},
+	}
+
+	// Pretty-print to stdout
+	godump.Dump(user)
+}
+```
+
+## 🧪 Example Output
+
+```go
+<#dump // main.go:26
+#main.User
+  +Name    => "Alice"
+  +Profile => #main.Profile
+    +Age   => 30
+    +Email => "alice@example.com"
+  }
+}
+```
+
+## 🚰 The Kitchen Sink Example
+
+Below are examples of all the different `godump` functions you can use to dump your data in various formats and outputs.
+
+* Pretty-print to stdout
+* Get dump as string
+* HTML for web UI output
+* Print JSON directly to stdout
+* Write to any `io.Writer` (e.g. file, buffer, logger)
+* Dump and exit
+
+**Runnable example in ./examples/kitchensink/main.go**
 
 ```go
 package main
@@ -101,82 +192,56 @@ func main() {
 }
 ```
 
-## 🧪 Example Output
-
-```go
-<#dump // main.go:26
-#main.User
-  +Name    => "Alice"
-  +Profile => #main.Profile
-    +Age   => 30
-    +Email => "alice@example.com"
-  }
-}
-```
-
 ## 🏗️ Builder Options Usage
 
-```go
-package main
+`godump` aims for simple usage with sensible defaults out of the box, but also provides a flexible builder-style API for customization.
 
-import (
-	"fmt"
-	"os"
-	"strings"
-	"github.com/goforj/godump"
+If you want to heavily customize the dumper behavior, you can create a `Dumper` instance with specific options:
+
+**Runnable example in ./examples/builder/main.go**
+
+```go
+user := User{
+    Name: "Alice",
+    Profile: Profile{
+        Age:   30,
+        Email: "alice@example.com",
+    },
+}
+
+// Custom Dumper with all options set explicitly
+d := godump.NewDumper(
+    godump.WithMaxDepth(15),           // default: 15
+    godump.WithMaxItems(100),          // default: 100
+    godump.WithMaxStringLen(100000),   // default: 100000
+    godump.WithWriter(os.Stdout),      // default: os.Stdout
+	godump.WithSkipStackFrames(10),    // default: 10
+	godump.WithDisableStringer(false), // default: false
 )
 
-type Profile struct {
-	Age   int
-	Email string
-}
+// Use the custom dumper
+d.Dump(user)
 
-type User struct {
-	Name    string
-	Profile Profile
-}
+// Dump to string
+out := d.DumpStr(user)
+fmt.Printf("DumpStr output:\n%s\n", out)
 
-func main() {
-	user := User{
-		Name: "Alice",
-		Profile: Profile{
-			Age:   30,
-			Email: "alice@example.com",
-		},
-	}
+// Dump to HTML string
+html := d.DumpHTML(user)
+fmt.Printf("DumpHTML output:\n%s\n", html)
 
-	// Custom Dumper with all options set explicitly
-	d := godump.NewDumper(
-		godump.WithMaxDepth(15),          // default: 15
-		godump.WithMaxItems(100),         // default: 100
-		godump.WithMaxStringLen(100000),  // default: 100000
-		godump.WithWriter(os.Stdout),     // default: os.Stdout
-	)
+// Dump JSON using the Dumper (returns string)
+jsonStr := d.DumpJSONStr(user)
+fmt.Printf("Dumper JSON string:\n%s\n", jsonStr)
 
-	// Use the custom dumper
-	d.Dump(user)
+// Print JSON directly from the Dumper
+d.DumpJSON(user)
 
-	// Dump to string
-	out := d.DumpStr(user)
-	fmt.Printf("DumpStr output:\n%s\n", out)
-
-	// Dump to HTML string
-	html := d.DumpHTML(user)
-	fmt.Printf("DumpHTML output:\n%s\n", html)
-
-	// Dump JSON using the Dumper (returns string)
-	jsonStr := d.DumpJSONStr(user)
-	fmt.Printf("Dumper JSON string:\n%s\n", jsonStr)
-
-	// Print JSON directly from the Dumper
-	d.DumpJSON(user)
-
-	// Dump to custom writer (e.g. a string builder)
-	var sb strings.Builder
-	custom := godump.NewDumper(godump.WithWriter(&sb))
-	custom.Dump(user)
-	fmt.Printf("Dump to string builder:\n%s\n", sb.String())
-}
+// Dump to custom writer (e.g. a string builder)
+var sb strings.Builder
+custom := godump.NewDumper(godump.WithWriter(&sb))
+custom.Dump(user)
+fmt.Printf("Dump to string builder:\n%s\n", sb.String())
 ```
 
 ## 📘 How to Read the Output
@@ -203,7 +268,7 @@ func main() {
 ### 🔐 Visibility Markers
 
 ```go
-  +Name    => "Alice"
+  +Name => "Alice"
   -secret  => "..."
 ```
 
@@ -251,8 +316,3 @@ If a pointer has already been printed:
 ## 🧩 License
 
 MIT © [goforj](https://github.com/goforj)
-
-## 📇 Author
-
-Created by [Chris Miles](https://github.com/akkadius)  
-Maintained as part of the [goforj](https://github.com/goforj) tooling ecosystem.
