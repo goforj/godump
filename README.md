@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <code>godump</code> is a developer-friendly, zero-dependency debug dumper for Go. It provides pretty, colorized terminal output of your structs, slices, maps, and more — complete with cyclic reference detection and control character escaping.
+  <code>godump</code> is a developer-friendly, zero-dependency debug dumper for Go. It provides pretty, colorized terminal output of your structs, slices, maps, and more - complete with cyclic reference detection and control character escaping.
     Inspired by Symfony's VarDumper which is used in Laravel's tools like <code>dump()</code> and <code>dd()</code>.
 </p>
 
@@ -79,7 +79,7 @@ go get github.com/goforj/godump
 
 Simple example demonstrating core functionality:
 
-<p align="center"> <a href="./examples/basic/main.go"><strong>View Full Runnable Example →</strong></a> </p>
+<p> <a href="./examples/basic/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
 package main
@@ -136,7 +136,7 @@ Below are examples of all the different `godump` functions you can use to dump y
 * Write to any `io.Writer` (e.g. file, buffer, logger)
 * Dump and exit
 
-<p align="center"> <a href="./examples/kitchensink/main.go"><strong>View Full Runnable Example →</strong></a> </p>
+<p> <a href="./examples/kitchensink/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
 package main
@@ -195,7 +195,7 @@ func main() {
 
 If you want to heavily customize the dumper behavior, you can create a `Dumper` instance with specific options:
 
-<p align="center"> <a href="./examples/builder/main.go"><strong>View Full Runnable Example →</strong></a> </p>
+<p> <a href="./examples/builder/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
 user := User{
