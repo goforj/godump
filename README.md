@@ -42,7 +42,7 @@
 - 🧪 Handles slices, maps, nested structs, pointers, time, etc.
 - 🪄 Control character escaping (`\n`, `\t`, etc.)
 
-### Comparison: `godump` vs `go-spew` vs `pp`
+## Comparison: `godump` vs `go-spew` vs `pp`
 
 | Feature                                                                | **godump**  |   **go-spew**    |    **pp**     |
 |------------------------------------------------------------------------|:-----------:|:----------------:|:-------------:|
@@ -67,7 +67,7 @@
 | **HTML / Web UI debugging support**                                    |      ✅      |        ❌         |       ❌       |
 | **Output style**                                                       | Human-first | Reflection-first |  Color-first  |
 
-If you find that anything in this table is inaccurate, please bring it to my attention by opening an issue so we can make sure the comparison is correct.
+If you'd like to suggest improvements or additional comparisons, feel free to open an issue or PR.
 
 ## 📦 Installation
 
@@ -85,9 +85,6 @@ Simple example demonstrating core functionality:
 package main
 
 import (
-	"fmt"
-	"os"
-	"strings"
 	"github.com/goforj/godump"
 )
 
@@ -139,7 +136,7 @@ Below are examples of all the different `godump` functions you can use to dump y
 * Write to any `io.Writer` (e.g. file, buffer, logger)
 * Dump and exit
 
-**Runnable example in ./examples/kitchensink/main.go**
+<p align="center"> <a href="./examples/kitchensink/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
 package main
@@ -198,7 +195,7 @@ func main() {
 
 If you want to heavily customize the dumper behavior, you can create a `Dumper` instance with specific options:
 
-**Runnable example in ./examples/builder/main.go**
+<p align="center"> <a href="./examples/builder/main.go"><strong>View Full Runnable Example →</strong></a> </p>
 
 ```go
 user := User{
@@ -243,6 +240,78 @@ custom := godump.NewDumper(godump.WithWriter(&sb))
 custom.Dump(user)
 fmt.Printf("Dump to string builder:\n%s\n", sb.String())
 ```
+
+<details>
+<summary><strong>📘 How to Read the Output</strong></summary>
+
+`godump` output is designed for clarity and traceability. Here's how to interpret its structure:
+
+### 🧭 Location Header
+
+```go
+<#dump // main.go:26
+````
+
+* The first line shows the **file and line number** where `godump.Dump()` was invoked.
+* Helpful for finding where the dump happened during debugging.
+
+### 🔎 Type Names
+
+```go
+#main.User
+```
+
+* Fully qualified struct name with its package path.
+
+### 🔐 Visibility Markers
+
+```go
+  +Name => "Alice"
+  -secret  => "..."
+```
+
+* `+` → Exported (public) field
+* `-` → Unexported (private) field (accessed reflectively)
+
+### 🔄 Cyclic References
+
+If a pointer has already been printed:
+
+```go
+↩︎ &1
+```
+
+* Prevents infinite loops in circular structures
+* References point back to earlier object instances
+
+### 🔢 Slices and Maps
+
+```go
+  0 => "value"
+  a => 1
+```
+
+* Array/slice indices and map keys are shown with `=>` formatting and indentation
+* Slices and maps are truncated if `maxItems` is exceeded
+
+### 🔣 Escaped Characters
+
+```go
+"Line1\nLine2\tDone"
+```
+
+* Control characters like `\n`, `\t`, `\r`, etc. are safely escaped
+* Strings are truncated after `maxStringLen` runes
+
+### 🧩 Supported Types
+
+* ✅ Structs (exported & unexported)
+* ✅ Pointers, interfaces
+* ✅ Maps, slices, arrays
+* ✅ Channels, functions
+* ✅ time.Time (nicely formatted)
+
+</details>
 
 ## 📘 How to Read the Output
 
