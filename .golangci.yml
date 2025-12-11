@@ -115,6 +115,8 @@ linters:
       allow-trailing-comment: true
 
   exclusions:
+    paths:
+      - examples
     presets:
       - common-false-positives
       - legacy
