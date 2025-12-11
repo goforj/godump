@@ -1080,3 +1080,27 @@ func TestRecursivePtr(t *testing.T) {
 	out := dumpStrT(t, val)
 	assert.Contains(t, out, "#***string")
 }
+
+func TestDumpJSON_Coverage(t *testing.T) {
+	var buf bytes.Buffer
+
+	// Replace default dumper's writer *temporarily*
+	oldWriter := defaultDumper.writer
+	defaultDumper.writer = &buf
+	defer func() { defaultDumper.writer = oldWriter }()
+
+	DumpJSON(123, 456)
+
+	out := buf.String()
+	if !strings.Contains(out, "123") || !strings.Contains(out, "456") {
+		t.Fatalf("expected JSON output to contain values, got: %s", out)
+	}
+}
+
+func TestDumpStr_Coverage(t *testing.T) {
+	out := DumpStr(123)
+
+	if !strings.Contains(out, "123") {
+		t.Fatalf("expected DumpStr to include value, got: %s", out)
+	}
+}

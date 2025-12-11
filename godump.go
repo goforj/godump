@@ -588,8 +588,6 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprintf("%f", v.Float())))
 	case reflect.Func:
 		fmt.Fprint(w, d.colorize(colorGray, v.Type().String()))
-	default:
-		// unreachable; all reflect.Kind cases are handled
 	}
 
 	// These types should not have post types since they have a body and already
