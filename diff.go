@@ -31,9 +31,9 @@ func (d *Dumper) DiffStr(a, b any) string {
 	d.printDiffHeader(&sb)
 	d.ensureColorizer()
 
-	leftDump, rightDump := d.diffDumps(a, b)
-	leftLines := splitLines(leftDump)
-	rightLines := splitLines(rightDump)
+	dumps := d.diffDumps(a, b)
+	leftLines := splitLines(dumps.left)
+	rightLines := splitLines(dumps.right)
 	ops := diffLines(leftLines, rightLines)
 
 	for _, op := range ops {
@@ -63,14 +63,19 @@ func (d *Dumper) DiffHTML(a, b any) string {
 	return sb.String()
 }
 
-func (d *Dumper) diffDumps(a, b any) (leftDump, rightDump string) {
+type diffDumpPair struct {
+	left  string
+	right string
+}
+
+func (d *Dumper) diffDumps(a, b any) diffDumpPair {
 	prevNextRefID := nextRefID
 	defer func() { nextRefID = prevNextRefID }()
 
 	nextRefID = 1
-	leftDump = d.dumpStrNoHeader(a)
+	leftDump := d.dumpStrNoHeader(a)
 	nextRefID = 1
-	rightDump = d.dumpStrNoHeader(b)
+	rightDump := d.dumpStrNoHeader(b)
 
 	if reflect.TypeOf(a) != reflect.TypeOf(b) {
 		leftType := fmt.Sprintf("type: %s", d.typeStringForAny(a))
@@ -79,7 +84,7 @@ func (d *Dumper) diffDumps(a, b any) (leftDump, rightDump string) {
 		rightDump = rightType + "\n" + rightDump
 	}
 
-	return leftDump, rightDump
+	return diffDumpPair{left: leftDump, right: rightDump}
 }
 
 func (d *Dumper) dumpStrNoHeader(vs ...any) string {
@@ -142,11 +147,12 @@ func diffLines(a, b []string) []diffLine {
 
 	for i := n - 1; i >= 0; i-- {
 		for j := m - 1; j >= 0; j-- {
-			if a[i] == b[j] {
+			switch {
+			case a[i] == b[j]:
 				dp[i][j] = dp[i+1][j+1] + 1
-			} else if dp[i+1][j] >= dp[i][j+1] {
+			case dp[i+1][j] >= dp[i][j+1]:
 				dp[i][j] = dp[i+1][j]
-			} else {
+			default:
 				dp[i][j] = dp[i][j+1]
 			}
 		}
