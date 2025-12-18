@@ -63,14 +63,14 @@ func (d *Dumper) DiffHTML(a, b any) string {
 	return sb.String()
 }
 
-func (d *Dumper) diffDumps(a, b any) (string, string) {
+func (d *Dumper) diffDumps(a, b any) (leftDump, rightDump string) {
 	prevNextRefID := nextRefID
 	defer func() { nextRefID = prevNextRefID }()
 
 	nextRefID = 1
-	leftDump := d.dumpStrNoHeader(a)
+	leftDump = d.dumpStrNoHeader(a)
 	nextRefID = 1
-	rightDump := d.dumpStrNoHeader(b)
+	rightDump = d.dumpStrNoHeader(b)
 
 	if reflect.TypeOf(a) != reflect.TypeOf(b) {
 		leftType := fmt.Sprintf("type: %s", d.typeStringForAny(a))
@@ -155,16 +155,16 @@ func diffLines(a, b []string) []diffLine {
 	out := make([]diffLine, 0, n+m)
 	i, j := 0, 0
 	for i < n && j < m {
-		if a[i] == b[j] {
+		switch {
+		case a[i] == b[j]:
 			out = append(out, diffLine{kind: diffEqual, text: a[i]})
 			i++
 			j++
 			continue
-		}
-		if dp[i+1][j] >= dp[i][j+1] {
+		case dp[i+1][j] >= dp[i][j+1]:
 			out = append(out, diffLine{kind: diffDelete, text: a[i]})
 			i++
-		} else {
+		default:
 			out = append(out, diffLine{kind: diffInsert, text: b[j]})
 			j++
 		}
