@@ -299,6 +299,12 @@ func (d *Dumper) colorize(code, str string) string {
 	return d.colorizer(code, str)
 }
 
+func (d *Dumper) ensureColorizer() {
+	if d.colorizer == nil {
+		d.colorizer = newColorizer()
+	}
+}
+
 // printDumpHeader prints the header for the dump output, including the file and line number.
 func (d *Dumper) printDumpHeader(out io.Writer) {
 	file, line := d.findFirstNonInternalFrame(d.skippedStackFrames)

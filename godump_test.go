@@ -173,6 +173,22 @@ func TestDumpHTML(t *testing.T) {
 	assert.Contains(t, html, `bar`)
 }
 
+func TestDiffStr(t *testing.T) {
+	type User struct {
+		Name string
+		Age  int
+	}
+
+	left := User{Name: "Alice", Age: 42}
+	right := User{Name: "Bob", Age: 42}
+
+	out := newDumperT(t).DiffStr(left, right)
+	assert.Contains(t, out, "<#diff //")
+	assert.Contains(t, out, `-   +Name => "Alice" #string`)
+	assert.Contains(t, out, `+   +Name => "Bob" #string`)
+	assert.Contains(t, out, `    +Age  => 42 #int`)
+}
+
 func TestForceExported(t *testing.T) {
 	type hidden struct {
 		private string
@@ -423,6 +439,14 @@ func TestCustomTruncatedSlice(t *testing.T) {
 	out = newDumperT(t, WithMaxItems(-1)).DumpStr(slice)
 	if strings.Contains(out, "... (truncated)") {
 		t.Error("Negative MaxItems option should not be applied")
+	}
+}
+
+func TestTruncatedMap(t *testing.T) {
+	m := map[string]int{"a": 1, "b": 2, "c": 3}
+	out := newDumperT(t, WithMaxItems(1)).DumpStr(m)
+	if !strings.Contains(out, "... (truncated)") {
+		t.Error("Expected map to be truncated")
 	}
 }
 

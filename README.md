@@ -36,6 +36,8 @@
 | **Colorized terminal output**                                           | ✓          | ✓           | ✓      |
 | **HTML output**                                                         | ✓          | -           | -      |
 | **JSON output helpers** (`DumpJSON`, `DumpJSONStr`)                     | ✓          | -           | -      |
+| **Diff output helpers** (`Diff`, `DiffStr`)                             | ✓          | -           | -      |
+| **Diff HTML output** (`DiffHTML`)                                       | ✓          | -           | -      |
 | **Dump to `io.Writer`**                                                 | ✓          | ✓           | ✓      |
 | **Shows file + line number of dump call**                               | ✓          | -           | -      |
 | **Cyclic reference detection**                                          | ✓          | ~           | -      |
@@ -49,7 +51,7 @@
 | **Supports structs, maps, slices, pointers, interfaces**                | ✓          | ✓           | ✓      |
 | **Pretty type name rendering** (`#package.Type`)                        | ✓          | -           | -      |
 | **Builder-style configuration API**                                     | ✓          | -           | -      |
-| **Test-friendly string output** (`DumpStr`, `DumpHTML`, `DumpJSONStr`)  | ✓          | ✓           | ✓      |
+| **Test-friendly string output** (`DumpStr`, `DiffStr`, `DumpJSONStr`, `DumpHTML`) | ✓          | ✓           | ✓      |
 | **HTML / Web UI debugging support**                                     | ✓          | -           | -      |
 
 If you'd like to suggest improvements or additional comparisons, feel free to open an issue or PR.
@@ -80,7 +82,34 @@ godump.DumpHTML(v) // return HTML output
 godump.DumpJSON(v) // print JSON directly
 godump.Fdump(w, v) // write to io.Writer
 godump.Dd(v)       // dump + exit
+godump.Diff(a, b)  // diff two values
+godump.DiffStr(a, b)  // diff two values as string
+godump.DiffHTML(a, b) // diff two values as HTML
 ````
+
+## Diff Usage
+
+<p> <a href="./examples/diff/main.go"><strong>View Diff Example →</strong></a> </p>
+
+```go
+type User struct {
+    Name string
+}
+before := User{Name: "Alice"}
+after := User{Name: "Bob"}
+godump.Diff(before, after)
+//   #main.User {
+// -   +Name => "Alice" #string
+// +   +Name => "Bob" #string
+//   }
+```
+
+<p> <a href="./examples/diffextended/main.go"><strong>View Diff Extended Example →</strong></a> </p>
+
+```go
+diff := godump.DiffStr(before, after)
+_ = diff
+```
 
 ## Builder Options Usage
 
@@ -109,6 +138,8 @@ All runnable examples can be found under [`./examples`](./examples):
 - **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
 - **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
 - **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
+- **Diff** → [`examples/diff/main.go`](./examples/diff/main.go)
+- **Diff extended** → [`examples/diffextended/main.go`](./examples/diffextended/main.go)
 
 <details>
 <summary><strong>📘 How to Read the Output</strong></summary>
