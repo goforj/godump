@@ -11,11 +11,13 @@ import (
 
 type FriendlyDuration time.Duration
 
+// String renders the duration as HH:MM:SS.
 func (fd FriendlyDuration) String() string {
 	td := time.Duration(fd)
 	return fmt.Sprintf("%02d:%02d:%02d", int(td.Hours()), int(td.Minutes())%60, int(td.Seconds())%60)
 }
 
+// main demonstrates a kitchen-sink dump.
 func main() {
 	type IsZeroer interface {
 		IsZero() bool

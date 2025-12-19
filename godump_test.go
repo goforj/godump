@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"text/tabwriter"
 	"time"
@@ -49,7 +50,7 @@ func TestSimpleStruct(t *testing.T) {
 
 	assert.Contains(t, out, "#godump.User")
 	assert.Contains(t, out, "+Name")
-	assert.Contains(t, out, "\"Alice\"")
+	assert.Contains(t, out, `"Alice"`)
 	assert.Contains(t, out, "+Profile")
 	assert.Contains(t, out, "#godump.Profile")
 	assert.Contains(t, out, "+Age")
@@ -72,6 +73,39 @@ func TestCycleReference(t *testing.T) {
 	n.Next = n
 	out := dumpStrT(t, n)
 	assert.Contains(t, out, "↩︎ &1")
+}
+
+func TestConcurrentDumpReferenceIDs(t *testing.T) {
+	type Node struct {
+		Next *Node
+	}
+
+	d := NewDumper()
+	d.colorizer = colorizeUnstyled
+
+	const runs = 50
+	results := make(chan string, runs)
+
+	var wg sync.WaitGroup
+	wg.Add(runs)
+
+	for i := 0; i < runs; i++ {
+		go func() {
+			defer wg.Done()
+
+			n := &Node{}
+			n.Next = n
+			results <- d.DumpStr(n)
+		}()
+	}
+
+	wg.Wait()
+	close(results)
+
+	for out := range results {
+		assert.Contains(t, out, "↩︎ &1")
+		assert.NotContains(t, out, "↩︎ &2")
+	}
 }
 
 func TestMaxDepth(t *testing.T) {
@@ -100,8 +134,8 @@ func TestSliceOutput(t *testing.T) {
 	s := []string{"one", "two"}
 	out := dumpStrT(t, s)
 
-	assert.Contains(t, out, "0 => \"one\"")
-	assert.Contains(t, out, "1 => \"two\"")
+	assert.Contains(t, out, `0 => "one"`)
+	assert.Contains(t, out, `1 => "two"`)
 }
 
 func TestAnonymousStruct(t *testing.T) {
@@ -173,6 +207,23 @@ func TestDumpHTML(t *testing.T) {
 	assert.Contains(t, html, `bar`)
 }
 
+func TestDiffStr(t *testing.T) {
+	type User struct {
+		Name string
+		Age  int
+	}
+
+	left := User{Name: "Alice", Age: 42}
+	right := User{Name: "Bob", Age: 42}
+
+	out := newDumperT(t).DiffStr(left, right)
+	out = stripANSI(out)
+	assert.Contains(t, out, "<#diff //")
+	assert.Contains(t, out, `-   +Name => "Alice" #string`)
+	assert.Contains(t, out, `+   +Name => "Bob" #string`)
+	assert.Contains(t, out, `    +Age  => 42 #int`)
+}
+
 func TestForceExported(t *testing.T) {
 	type hidden struct {
 		private string
@@ -189,7 +240,7 @@ func TestDetectColorVariants(t *testing.T) {
 		assert.True(t, detectColor())
 
 		out := NewDumper().colorize(colorYellow, "test")
-		assert.Equal(t, "\x1b[33mtest\x1b[0m", out)
+		assert.Equal(t, string(ansiEscape)+"[33mtest"+string(ansiEscape)+"[0m", out)
 	})
 
 	t.Run("forcing no color", func(t *testing.T) {
@@ -205,13 +256,13 @@ func TestDetectColorVariants(t *testing.T) {
 		assert.True(t, detectColor())
 
 		out := NewDumper().colorize(colorYellow, "test")
-		assert.Equal(t, "\x1b[33mtest\x1b[0m", out)
+		assert.Equal(t, string(ansiEscape)+"[33mtest"+string(ansiEscape)+"[0m", out)
 	})
 }
 
 func TestHtmlColorizeUnknown(t *testing.T) {
 	// Color not in htmlColorMap
-	out := colorizeHTML("\033[999m", "test")
+	out := colorizeHTML(string(ansiEscape)+"[999m", "test")
 	assert.Contains(t, out, `<span style="color:`)
 	assert.Contains(t, out, "test")
 }
@@ -223,7 +274,7 @@ func TestUnreadableFallback(t *testing.T) {
 	var ch chan int // nil typed value, not interface
 	rv := reflect.ValueOf(ch)
 
-	newDumperT(t).printValue(tw, rv, 0)
+	newDumperT(t).printValue(tw, rv, 0, newDumpState())
 	tw.Flush()
 
 	output := b.String()
@@ -243,7 +294,7 @@ func TestUnreadableFieldFallback(t *testing.T) {
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 
 	out := sb.String()
@@ -279,7 +330,7 @@ func TestPrimitiveTypes(t *testing.T) {
 }
 
 func TestEscapeControl_AllVariants(t *testing.T) {
-	in := "\n\t\r\v\f\x1b"
+	in := "\n\t\r\v\f" + string(ansiEscape)
 	out := escapeControl(in)
 
 	assert.Contains(t, out, `\n`)
@@ -296,7 +347,7 @@ func TestDefaultFallback_Unreadable(t *testing.T) {
 
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "<invalid>")
@@ -307,7 +358,7 @@ func TestPrintValue_Uintptr(t *testing.T) {
 	val := uintptr(12345)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(val), 0)
+	newDumperT(t).printValue(tw, reflect.ValueOf(val), 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "12345")
@@ -319,7 +370,7 @@ func TestPrintValue_UnsafePointer(t *testing.T) {
 	up := unsafe.Pointer(&i)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(up), 0)
+	newDumperT(t).printValue(tw, reflect.ValueOf(up), 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "unsafe.Pointer")
@@ -329,7 +380,7 @@ func TestPrintValue_Func(t *testing.T) {
 	fn := func() {}
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(fn), 0)
+	newDumperT(t).printValue(tw, reflect.ValueOf(fn), 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "func()")
@@ -426,6 +477,14 @@ func TestCustomTruncatedSlice(t *testing.T) {
 	}
 }
 
+func TestTruncatedMap(t *testing.T) {
+	m := map[string]int{"a": 1, "b": 2, "c": 3}
+	out := newDumperT(t, WithMaxItems(1)).DumpStr(m)
+	if !strings.Contains(out, "... (truncated)") {
+		t.Error("Expected map to be truncated")
+	}
+}
+
 func TestTruncatedString(t *testing.T) {
 	s := strings.Repeat("x", 100001)
 	out := dumpStrT(t, s)
@@ -463,7 +522,7 @@ func TestDefaultBranchFallback(t *testing.T) {
 	var v reflect.Value // zero reflect.Value
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 	if !strings.Contains(sb.String(), "<invalid>") {
 		t.Error("Expected default fallback for invalid reflect.Value")
@@ -727,7 +786,7 @@ func TestPrintValue_ChanNilBranch_Hardforce(t *testing.T) {
 	assert.True(t, v.IsNil())
 	assert.Equal(t, reflect.Chan, v.Kind())
 
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "customChan(nil)")
