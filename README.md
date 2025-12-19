@@ -28,6 +28,12 @@
   <img src="docs/demo-html.png" alt="HTML output example">
 </p>
 
+
+<p align="center">
+<strong>godump.Diff(a,b) Output Example</strong><br>
+  <img src="docs/demo-diff.png" alt="Diff output example">
+</p>
+
 ## Feature Comparison: `godump` vs `go-spew` vs `pp`
 
 | **Feature**                                                            | **godump** | **go-spew** | **pp** |
@@ -122,6 +128,7 @@ godump.NewDumper(
     godump.WithWriter(os.Stdout),      // default: os.Stdout
     godump.WithSkipStackFrames(10),    // default: 10
     godump.WithDisableStringer(false), // default: false
+    godump.WithNoColor(true),          // default: false
 ).Dump(v)
 ```
 
