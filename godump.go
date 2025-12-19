@@ -358,6 +358,7 @@ func DumpStr(vs ...any) string {
 //	v := map[string]int{"a": 1}
 //	out := d.DumpStr(v)
 //	_ = out
+//	// "#map[string]int {\n  a => 1 #int\n}" #string
 func (d *Dumper) DumpStr(vs ...any) string {
 	local := d.clone()
 	state := newDumpState()

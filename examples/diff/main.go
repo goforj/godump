@@ -13,4 +13,11 @@ func main() {
 	a := map[string]int{"a": 1}
 	b := map[string]int{"a": 2}
 	d.Diff(a, b)
+	// <#diff // path:line
+	// - #map[string]int {
+	// -   a => 1 #int
+	// - }
+	// + #map[string]int {
+	// +   a => 2 #int
+	// + }
 }

@@ -13,4 +13,5 @@ func main() {
 	v := map[string]int{"a": 1}
 	out := d.DumpStr(v)
 	_ = out
+	// "#map[string]int {\n  a => 1 #int\n}" #string
 }
