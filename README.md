@@ -10,6 +10,9 @@
     <img src="https://img.shields.io/github/v/tag/goforj/godump?label=version&sort=semver" alt="Latest tag">
     <a href="https://goreportcard.com/report/github.com/goforj/godump"><img src="https://goreportcard.com/badge/github.com/goforj/godump" alt="Go Report Card"></a>
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
+<!-- test-count:embed:start -->
+    <img src="https://img.shields.io/badge/tests-109-brightgreen" alt="Tests">
+<!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
 
@@ -128,20 +131,25 @@ godump.NewDumper(
     godump.WithWriter(os.Stdout),      // default: os.Stdout
     godump.WithSkipStackFrames(10),    // default: 10
     godump.WithDisableStringer(false), // default: false
-    godump.WithNoColor(true),          // default: false
+    godump.WithNoColor(),              // default: false
 ).Dump(v)
 ```
 
-## Full Examples Directory
+## Contributing
 
-All runnable examples can be found under [`./examples`](./examples):
+Ensure that all tests pass, and you run ./docs/generate.sh to update the API index in the README before submitting a PR.
 
-- **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
-- **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
-- **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
-- **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
-- **Diff** → [`examples/diff/main.go`](./examples/diff/main.go)
-- **Diff extended** → [`examples/diffextended/main.go`](./examples/diffextended/main.go)
+Ensure all public functions have documentation blocks with examples, as these are used to generate runnable examples and the API index.
+
+## Runnable Examples Directory
+
+Every function has a corresponding runnable example under [`./examples`](./examples).
+
+These examples are **generated directly from the documentation blocks** of each function, ensuring the docs and code never drift. These are the same examples you see here in the README and GoDoc.
+
+An automated test executes **every example** to verify it builds and runs successfully.
+
+This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
 
 <details>
 <summary><strong>📘 How to Read the Output</strong></summary>
@@ -216,3 +224,95 @@ If a pointer has already been printed:
 * ✅ time.Time (nicely formatted)
 
 </details>
+
+<!-- api:embed:start -->
+
+## API Index
+
+| Group | Functions |
+|------:|-----------|
+| **Other** | [Dd](#dd) [Diff](#diff) [DiffHTML](#diffhtml) [DiffStr](#diffstr) [Dump](#dump) [DumpHTML](#dumphtml) [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) [DumpStr](#dumpstr) [Fdump](#fdump) [NewDumper](#newdumper) [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithNoColor](#withnocolor) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) |
+
+
+## Other
+
+### <a id="dd"></a>Dd
+
+Dd is a debug function that prints the values and exits the program.
+
+### <a id="diff"></a>Diff
+
+Diff prints a diff between two values to stdout.
+
+### <a id="diffhtml"></a>DiffHTML
+
+DiffHTML returns an HTML diff between two values.
+
+### <a id="diffstr"></a>DiffStr
+
+DiffStr returns a string diff between two values.
+
+### <a id="dump"></a>Dump
+
+Dump prints the values to stdout with colorized output.
+
+### <a id="dumphtml"></a>DumpHTML
+
+DumpHTML dumps the values as HTML with colorized output.
+
+### <a id="dumpjson"></a>DumpJSON
+
+DumpJSON prints a pretty-printed JSON string to the configured writer.
+
+### <a id="dumpjsonstr"></a>DumpJSONStr
+
+DumpJSONStr pretty-prints values as JSON and returns it as a string.
+
+### <a id="dumpstr"></a>DumpStr
+
+DumpStr returns a string representation of the values with colorized output.
+
+### <a id="fdump"></a>Fdump
+
+Fdump writes the formatted dump of values to the given io.Writer.
+
+### <a id="newdumper"></a>NewDumper
+
+NewDumper creates a new Dumper with the given options applied.
+Defaults are used for any setting not overridden.
+
+### <a id="withdisablestringer"></a>WithDisableStringer
+
+WithDisableStringer will determine if the stringer value for types that
+implement the stringer interface should be render instead of the actual type.
+
+### <a id="withmaxdepth"></a>WithMaxDepth
+
+WithMaxDepth allows to control how deep the structure will be dumped.
+Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15
+
+### <a id="withmaxitems"></a>WithMaxItems
+
+WithMaxItems allows to control how many items from an array, slice or maps can be printed.
+Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100
+
+### <a id="withmaxstringlen"></a>WithMaxStringLen
+
+WithMaxStringLen allows to control how long can printed strings be.
+Param n must be 0 or greater or this will be ignored, and default MaxStringLen will be 100000
+
+### <a id="withnocolor"></a>WithNoColor
+
+WithNoColor disables colorized output for the dumper.
+
+### <a id="withskipstackframes"></a>WithSkipStackFrames
+
+WithSkipStackFrames allows users to skip additional stack frames
+on top of the frames that godump already skips internally.
+This is useful when godump is wrapped in other functions or utilities,
+and the actual call site is deeper in the stack.
+
+### <a id="withwriter"></a>WithWriter
+
+WithWriter allows to control the io output.
+<!-- api:embed:end -->
