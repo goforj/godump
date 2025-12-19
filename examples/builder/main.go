@@ -21,6 +21,7 @@ type User struct {
 	Profile Profile
 }
 
+// main demonstrates the builder-style API.
 func main() {
 	user := User{
 		Name: "Alice",

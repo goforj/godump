@@ -51,7 +51,7 @@
 | **Supports structs, maps, slices, pointers, interfaces**                | ✓          | ✓           | ✓      |
 | **Pretty type name rendering** (`#package.Type`)                        | ✓          | -           | -      |
 | **Builder-style configuration API**                                     | ✓          | -           | -      |
-| **Test-friendly string output** (`DumpStr`, `DiffStr`, `DumpJSONStr`, `DumpHTML`) | ✓          | ✓           | ✓      |
+| **Test-friendly string output** (`DumpStr`, `DiffStr`, `DumpJSONStr`) | ✓          | ✓           | ✓      |
 | **HTML / Web UI debugging support**                                     | ✓          | -           | -      |
 
 If you'd like to suggest improvements or additional comparisons, feel free to open an issue or PR.
@@ -105,11 +105,6 @@ godump.Diff(before, after)
 ```
 
 <p> <a href="./examples/diffextended/main.go"><strong>View Diff Extended Example →</strong></a> </p>
-
-```go
-diff := godump.DiffStr(before, after)
-_ = diff
-```
 
 ## Builder Options Usage
 

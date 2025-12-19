@@ -38,7 +38,7 @@ func (d *Dumper) DiffStr(a, b any) string {
 
 	for _, op := range ops {
 		sb.WriteString(d.diffPrefix(op.kind))
-		sb.WriteString(op.text)
+		sb.WriteString(d.diffTintLine(op.text, op.kind))
 		sb.WriteString("\n")
 	}
 
@@ -68,13 +68,13 @@ type diffDumpPair struct {
 	right string
 }
 
+// diffDumps builds the left and right dump strings, aligning reference ids.
 func (d *Dumper) diffDumps(a, b any) diffDumpPair {
-	prevNextRefID := nextRefID
-	defer func() { nextRefID = prevNextRefID }()
-
-	nextRefID = 1
+	d.referenceMap = map[uintptr]int{}
+	d.nextRefID = 1
 	leftDump := d.dumpStrNoHeader(a)
-	nextRefID = 1
+	d.referenceMap = map[uintptr]int{}
+	d.nextRefID = 1
 	rightDump := d.dumpStrNoHeader(b)
 
 	if reflect.TypeOf(a) != reflect.TypeOf(b) {
@@ -87,6 +87,7 @@ func (d *Dumper) diffDumps(a, b any) diffDumpPair {
 	return diffDumpPair{left: leftDump, right: rightDump}
 }
 
+// dumpStrNoHeader renders a dump without the header line.
 func (d *Dumper) dumpStrNoHeader(vs ...any) string {
 	d.ensureColorizer()
 
@@ -97,6 +98,7 @@ func (d *Dumper) dumpStrNoHeader(vs ...any) string {
 	return sb.String()
 }
 
+// printDiffHeader writes the diff header line when a caller frame is available.
 func (d *Dumper) printDiffHeader(out io.Writer) {
 	file, line := d.findFirstNonInternalFrame(d.skippedStackFrames)
 	if file == "" {
@@ -114,6 +116,7 @@ func (d *Dumper) printDiffHeader(out io.Writer) {
 	fmt.Fprintln(out, d.colorize(colorGray, header))
 }
 
+// typeStringForAny returns a displayable type for a value.
 func (d *Dumper) typeStringForAny(v any) string {
 	if v == nil {
 		return "<nil>"
@@ -134,6 +137,7 @@ type diffLine struct {
 	text string
 }
 
+// diffLines computes a line-level diff with insert/delete operations.
 func diffLines(a, b []string) []diffLine {
 	if len(a) == 0 && len(b) == 0 {
 		return nil
@@ -188,6 +192,7 @@ func diffLines(a, b []string) []diffLine {
 	return out
 }
 
+// diffPrefix returns the colored diff marker prefix.
 func (d *Dumper) diffPrefix(kind diffKind) string {
 	switch kind {
 	case diffDelete:
@@ -199,7 +204,74 @@ func (d *Dumper) diffPrefix(kind diffKind) string {
 	}
 }
 
+// diffTintLine tints a full diff line based on change type.
+func (d *Dumper) diffTintLine(line string, kind diffKind) string {
+	switch kind {
+	case diffDelete:
+		return d.tintLine(line, colorRed)
+	case diffInsert:
+		return d.tintLine(line, colorGreen)
+	default:
+		return line
+	}
+}
+
+// tintLine strips any existing styling and applies a full-line color.
+func (d *Dumper) tintLine(line, colorCode string) string {
+	if isHTMLLine(line) {
+		return d.colorize(colorCode, stripHTMLSpans(line))
+	}
+	if strings.Contains(line, "\x1b[") {
+		return d.colorize(colorCode, stripANSI(line))
+	}
+	return d.colorize(colorCode, line)
+}
+
+// stripANSI removes ANSI escape sequences from a string.
+func stripANSI(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\x1b' {
+			b.WriteByte(s[i])
+			continue
+		}
+		if i+1 < len(s) && s[i+1] == '[' {
+			i += 2
+			for i < len(s) && s[i] != 'm' {
+				i++
+			}
+			continue
+		}
+	}
+	return b.String()
+}
+
+// stripHTMLSpans removes color span tags while preserving content.
+func stripHTMLSpans(s string) string {
+	for {
+		start := strings.Index(s, `<span style="color:`)
+		if start == -1 {
+			break
+		}
+		end := strings.Index(s[start:], `">`)
+		if end == -1 {
+			break
+		}
+		s = s[:start] + s[start+end+2:]
+	}
+	return strings.ReplaceAll(s, "</span>", "")
+}
+
+// isHTMLLine reports whether the line contains HTML color spans.
+func isHTMLLine(line string) bool {
+	return strings.Contains(line, `<span style="color:`)
+}
+
+// splitLines splits a string into lines while normalizing CRLF and trimming a trailing newline.
 func splitLines(s string) []string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
 	s = strings.TrimSuffix(s, "\n")
 	if s == "" {
 		return nil

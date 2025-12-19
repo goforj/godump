@@ -49,7 +49,7 @@ func TestSimpleStruct(t *testing.T) {
 
 	assert.Contains(t, out, "#godump.User")
 	assert.Contains(t, out, "+Name")
-	assert.Contains(t, out, "\"Alice\"")
+	assert.Contains(t, out, `"Alice"`)
 	assert.Contains(t, out, "+Profile")
 	assert.Contains(t, out, "#godump.Profile")
 	assert.Contains(t, out, "+Age")
@@ -100,8 +100,8 @@ func TestSliceOutput(t *testing.T) {
 	s := []string{"one", "two"}
 	out := dumpStrT(t, s)
 
-	assert.Contains(t, out, "0 => \"one\"")
-	assert.Contains(t, out, "1 => \"two\"")
+	assert.Contains(t, out, `0 => "one"`)
+	assert.Contains(t, out, `1 => "two"`)
 }
 
 func TestAnonymousStruct(t *testing.T) {

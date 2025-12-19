@@ -15,6 +15,7 @@ type User struct {
 	Profile Profile
 }
 
+// main demonstrates diff output.
 func main() {
 	before := User{
 		Name: "Alice",

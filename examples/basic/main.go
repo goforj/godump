@@ -17,6 +17,7 @@ type User struct {
 	Profile Profile
 }
 
+// main demonstrates basic dumping.
 func main() {
 	user := User{
 		Name: "Alice",

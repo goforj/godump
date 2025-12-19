@@ -12,6 +12,7 @@ import (
 
 type FriendlyDuration time.Duration
 
+// String renders the duration as HH:MM:SS.
 func (fd FriendlyDuration) String() string {
 	td := time.Duration(fd)
 	return fmt.Sprintf("%02d:%02d:%02d", int(td.Hours()), int(td.Minutes())%60, int(td.Seconds())%60)
@@ -53,6 +54,7 @@ type Everything struct {
 	privateStruct Inner
 }
 
+// makeEverything builds a populated sample struct.
 func makeEverything(now time.Time, label string) Everything {
 	ptrStr := "Hello " + label
 	dur := time.Minute*20 + time.Second*10
@@ -91,6 +93,7 @@ func makeEverything(now time.Time, label string) Everything {
 	return val
 }
 
+// main demonstrates diffing two complex structures.
 func main() {
 	now := time.Date(2025, 12, 18, 16, 34, 37, 0, time.FixedZone("CST", -6*60*60))
 

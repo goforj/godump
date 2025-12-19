@@ -45,11 +45,6 @@ var defaultDumper = NewDumper()
 // exitFunc is a function that can be overridden for testing purposes.
 var exitFunc = os.Exit
 
-var (
-	nextRefID    = 1
-	referenceMap = map[uintptr]int{}
-)
-
 // Colorizer is a function type that takes a color code and a string, returning the colorized string.
 type Colorizer func(code, str string) string
 
@@ -96,6 +91,8 @@ type Dumper struct {
 	writer             io.Writer
 	skippedStackFrames int
 	disableStringer    bool
+	nextRefID          int
+	referenceMap       map[uintptr]int
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -179,6 +176,8 @@ func NewDumper(opts ...Option) *Dumper {
 		maxItems:        defaultMaxItems,
 		maxStringLen:    defaultMaxStringLen,
 		disableStringer: defaultDisableStringer,
+		nextRefID:       1,
+		referenceMap:    map[uintptr]int{},
 		writer:          os.Stdout,
 		colorizer:       nil, // ensure no detection is made if we don't need it
 		callerFn:        runtime.Caller,
@@ -211,10 +210,11 @@ func DumpStr(vs ...any) string {
 
 // DumpStr returns a string representation of the values with colorized output.
 func (d *Dumper) DumpStr(vs ...any) string {
+	local := d.clone()
 	var sb strings.Builder
-	d.printDumpHeader(&sb)
+	local.printDumpHeader(&sb)
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	d.writeDump(tw, vs...)
+	local.writeDump(tw, vs...)
 	tw.Flush()
 	return sb.String()
 }
@@ -303,6 +303,7 @@ func (d *Dumper) colorize(code, str string) string {
 	return d.colorizer(code, str)
 }
 
+// ensureColorizer initializes the colorizer when none is configured.
 func (d *Dumper) ensureColorizer() {
 	if d.colorizer == nil {
 		d.colorizer = newColorizer()
@@ -423,7 +424,8 @@ func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 }
 
 func (d *Dumper) writeDump(w io.Writer, vs ...any) {
-	referenceMap = map[uintptr]int{} // reset each time
+	d.referenceMap = map[uintptr]int{} // reset each time
+	d.nextRefID = 1
 	for _, v := range vs {
 		rv := reflect.ValueOf(v)
 		rv = makeAddressable(rv)
@@ -482,12 +484,12 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 
 	if v.Kind() == reflect.Ptr && v.CanAddr() {
 		ptr := v.Pointer()
-		if id, ok := referenceMap[ptr]; ok {
+		if id, ok := d.referenceMap[ptr]; ok {
 			fmt.Fprintf(w, d.colorize(colorRef, "↩︎ &%d"), id)
 			return
 		} else {
-			referenceMap[ptr] = nextRefID
-			nextRefID++
+			d.referenceMap[ptr] = d.nextRefID
+			d.nextRefID++
 		}
 	}
 

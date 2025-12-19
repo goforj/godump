@@ -21,6 +21,9 @@ func TestDiffHelpers(t *testing.T) {
 	assert.Nil(t, splitLines(""))
 	assert.Nil(t, diffLines(nil, nil))
 
+	assert.Equal(t, []string{"", ""}, splitLines("\r\n\r\n"))
+	assert.Equal(t, []string{"a", "b"}, splitLines("a\r\nb\r\n"))
+
 	lines := diffLines([]string{"A", "B"}, []string{"A", "C"})
 	assert.Equal(t, []diffLine{
 		{kind: diffEqual, text: "A"},
@@ -78,8 +81,8 @@ func TestDiffTopLevelHelpers(t *testing.T) {
 
 	out = DiffStr("a", "b")
 	assert.Contains(t, out, "<#diff //")
-	assert.Contains(t, out, "- \"a\" #string")
-	assert.Contains(t, out, "+ \"b\" #string")
+	assert.Contains(t, out, `- "a" #string`)
+	assert.Contains(t, out, `+ "b" #string`)
 }
 
 func TestDiffHTML(t *testing.T) {
@@ -107,5 +110,26 @@ func TestEnsureColorizerNoHeader(t *testing.T) {
 	d := NewDumper()
 	d.colorizer = nil
 	out := d.dumpStrNoHeader("x")
-	assert.Contains(t, out, "\"x\"")
+	assert.Contains(t, out, `"x"`)
+}
+
+func TestDiffTintHelpers(t *testing.T) {
+	d := NewDumper()
+	d.colorizer = colorizeUnstyled
+
+	line := d.tintLine("\x1b[33mabc\x1b[0m", colorRed)
+	assert.Equal(t, "abc", line)
+
+	assert.Equal(t, "abc", stripANSI("\x1b[31mabc\x1b[0m"))
+	assert.Equal(t, "abc", stripANSI("abc"))
+
+	html := `<span style="color:#999">x</span>`
+	assert.Equal(t, "x", stripHTMLSpans(html))
+	assert.True(t, isHTMLLine(html))
+
+	htmlBroken := `<span style="color:#999"broken`
+	assert.Equal(t, htmlBroken, stripHTMLSpans(htmlBroken))
+
+	line = d.tintLine(html, colorRed)
+	assert.Equal(t, "x", line)
 }

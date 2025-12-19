@@ -16,6 +16,7 @@ type User struct {
 	Profile Profile
 }
 
+// main demonstrates extended output formats.
 func main() {
 	user := User{
 		Name: "Alice",
