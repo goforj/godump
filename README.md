@@ -130,7 +130,7 @@ godump.NewDumper(
 ).Dump(v)
 ```
 
-## 📁 Full Examples Directory
+## Full Examples Directory
 
 All runnable examples can be found under [`./examples`](./examples):
 
@@ -214,7 +214,3 @@ If a pointer has already been printed:
 * ✅ time.Time (nicely formatted)
 
 </details>
-
-## 🧩 License
-
-MIT © [goforj](https://github.com/goforj)
