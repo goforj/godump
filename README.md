@@ -553,6 +553,7 @@ WithDisableStringer disables using the fmt.Stringer output.
 When enabled, the underlying type is rendered instead of String().
 
 ```go
+// Default: false
 v := time.Duration(3)
 d := godump.NewDumper(godump.WithDisableStringer(true))
 d.Dump(v)
@@ -565,6 +566,7 @@ WithMaxDepth limits how deep the structure will be dumped.
 Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15.
 
 ```go
+// Default: 15
 v := map[string]map[string]int{"a": {"b": 1}}
 d := godump.NewDumper(godump.WithMaxDepth(1))
 d.Dump(v)
@@ -581,6 +583,7 @@ WithMaxItems limits how many items from an array, slice, or map can be printed.
 Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100.
 
 ```go
+// Default: 100
 v := []int{1, 2, 3}
 d := godump.NewDumper(godump.WithMaxItems(2))
 d.Dump(v)
@@ -597,6 +600,7 @@ WithMaxStringLen limits how long printed strings can be.
 Param n must be 0 or greater or this will be ignored, and default MaxStringLen will be 100000.
 
 ```go
+// Default: 100000
 v := "hello world"
 d := godump.NewDumper(godump.WithMaxStringLen(5))
 d.Dump(v)
@@ -609,6 +613,7 @@ WithSkipStackFrames skips additional stack frames for header reporting.
 This is useful when godump is wrapped and the actual call site is deeper.
 
 ```go
+// Default: 0
 v := map[string]int{"a": 1}
 d := godump.NewDumper(godump.WithSkipStackFrames(2))
 d.Dump(v)
@@ -623,6 +628,7 @@ d.Dump(v)
 WithWriter routes output to the provided writer.
 
 ```go
+// Default: stdout
 var b strings.Builder
 v := map[string]int{"a": 1}
 d := godump.NewDumper(godump.WithWriter(&b))
@@ -637,6 +643,7 @@ d.Dump(v)
 WithoutColor disables colorized output for the dumper.
 
 ```go
+// Default: false
 v := map[string]int{"a": 1}
 d := godump.NewDumper(godump.WithoutColor())
 d.Dump(v)

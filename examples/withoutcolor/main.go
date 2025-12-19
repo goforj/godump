@@ -9,6 +9,7 @@ func main() {
 	// WithoutColor disables colorized output for the dumper.
 
 	// Example: disable colors
+	// Default: false
 	v := map[string]int{"a": 1}
 	d := godump.NewDumper(godump.WithoutColor())
 	d.Dump(v)

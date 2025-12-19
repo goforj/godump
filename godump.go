@@ -126,6 +126,7 @@ func newDumpState() *dumpState {
 //
 // Example: limit depth
 //
+//	// Default: 15
 //	v := map[string]map[string]int{"a": {"b": 1}}
 //	d := godump.NewDumper(godump.WithMaxDepth(1))
 //	d.Dump(v)
@@ -149,6 +150,7 @@ func WithMaxDepth(n int) Option {
 //
 // Example: limit items
 //
+//	// Default: 100
 //	v := []int{1, 2, 3}
 //	d := godump.NewDumper(godump.WithMaxItems(2))
 //	d.Dump(v)
@@ -172,6 +174,7 @@ func WithMaxItems(n int) Option {
 //
 // Example: limit string length
 //
+//	// Default: 100000
 //	v := "hello world"
 //	d := godump.NewDumper(godump.WithMaxStringLen(5))
 //	d.Dump(v)
@@ -190,6 +193,7 @@ func WithMaxStringLen(n int) Option {
 //
 // Example: write to buffer
 //
+//	// Default: stdout
 //	var b strings.Builder
 //	v := map[string]int{"a": 1}
 //	d := godump.NewDumper(godump.WithWriter(&b))
@@ -210,6 +214,7 @@ func WithWriter(w io.Writer) Option {
 //
 // Example: skip wrapper frames
 //
+//	// Default: 0
 //	v := map[string]int{"a": 1}
 //	d := godump.NewDumper(godump.WithSkipStackFrames(2))
 //	d.Dump(v)
@@ -232,6 +237,7 @@ func WithSkipStackFrames(n int) Option {
 //
 // Example: show raw types
 //
+//	// Default: false
 //	v := time.Duration(3)
 //	d := godump.NewDumper(godump.WithDisableStringer(true))
 //	d.Dump(v)
@@ -248,6 +254,7 @@ func WithDisableStringer(b bool) Option {
 //
 // Example: disable colors
 //
+//	// Default: false
 //	v := map[string]int{"a": 1}
 //	d := godump.NewDumper(godump.WithoutColor())
 //	d.Dump(v)

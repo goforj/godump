@@ -385,37 +385,37 @@ func writeMain(base string, fd *FuncDoc, importPath string) error {
 		if strings.Contains(ex.Code, "strings.") {
 			imports["strings"] = true
 		}
-		if strings.Contains(ex.Code, "os.") {
+		if containsCodeUsage(ex.Code, "os.") {
 			imports["os"] = true
 		}
-		if strings.Contains(ex.Code, "context.") {
+		if containsCodeUsage(ex.Code, "context.") {
 			imports["context"] = true
 		}
-		if strings.Contains(ex.Code, "regexp.") {
+		if containsCodeUsage(ex.Code, "regexp.") {
 			imports["regexp"] = true
 		}
-		if strings.Contains(ex.Code, "redis.") {
+		if containsCodeUsage(ex.Code, "redis.") {
 			imports["github.com/redis/go-redis/v9"] = true
 		}
-		if strings.Contains(ex.Code, "time.") {
+		if containsCodeUsage(ex.Code, "time.") {
 			imports["time"] = true
 		}
-		if strings.Contains(ex.Code, "gocron") {
+		if containsCodeUsage(ex.Code, "gocron") {
 			imports["github.com/go-co-op/gocron/v2"] = true
 		}
-		if strings.Contains(ex.Code, "scheduler") {
+		if containsCodeUsage(ex.Code, "scheduler") {
 			imports["github.com/goforj/scheduler"] = true
 		}
-		if strings.Contains(ex.Code, "filepath.") {
+		if containsCodeUsage(ex.Code, "filepath.") {
 			imports["path/filepath"] = true
 		}
-		if strings.Contains(ex.Code, "godump.") {
+		if containsCodeUsage(ex.Code, "godump.") {
 			imports["github.com/goforj/godump"] = true
 		}
-		if strings.Contains(ex.Code, "rand.") {
+		if containsCodeUsage(ex.Code, "rand.") {
 			imports["crypto/rand"] = true
 		}
-		if strings.Contains(ex.Code, "base64.") {
+		if containsCodeUsage(ex.Code, "base64.") {
 			imports["encoding/base64"] = true
 		}
 	}
@@ -469,4 +469,17 @@ func writeMain(base string, fd *FuncDoc, importPath string) error {
 	buf.WriteString("}\n")
 
 	return os.WriteFile(filepath.Join(dir, "main.go"), buf.Bytes(), 0o644)
+}
+
+func containsCodeUsage(code, token string) bool {
+	for _, line := range strings.Split(code, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "//") {
+			continue
+		}
+		if strings.Contains(trimmed, token) {
+			return true
+		}
+	}
+	return false
 }

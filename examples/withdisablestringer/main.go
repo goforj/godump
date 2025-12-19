@@ -13,6 +13,7 @@ func main() {
 	// When enabled, the underlying type is rendered instead of String().
 
 	// Example: show raw types
+	// Default: false
 	v := time.Duration(3)
 	d := godump.NewDumper(godump.WithDisableStringer(true))
 	d.Dump(v)
