@@ -93,6 +93,7 @@ type Dumper struct {
 	writer             io.Writer
 	skippedStackFrames int
 	disableStringer    bool
+	disableColor       bool
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -178,6 +179,15 @@ func WithSkipStackFrames(n int) Option {
 func WithDisableStringer(b bool) Option {
 	return func(d *Dumper) *Dumper {
 		d.disableStringer = b
+		return d
+	}
+}
+
+// WithNoColor disables colorized output for the dumper.
+func WithNoColor() Option {
+	return func(d *Dumper) *Dumper {
+		d.disableColor = true
+		d.colorizer = colorizeUnstyled
 		return d
 	}
 }
@@ -269,7 +279,9 @@ func (d *Dumper) DumpHTML(vs ...any) string {
 	sb.WriteString(`<div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
 
 	htmlDumper := d.clone()
-	htmlDumper.colorizer = colorizeHTML // use HTML colorizer
+	if !htmlDumper.disableColor {
+		htmlDumper.colorizer = colorizeHTML // use HTML colorizer
+	}
 
 	sb.WriteString(htmlDumper.DumpStr(vs...))
 
@@ -311,6 +323,10 @@ func (d *Dumper) clone() *Dumper {
 func (d *Dumper) colorize(code, str string) string {
 	if d.colorizer == nil {
 		// this avoids detecting color if not needed
+		if d.disableColor {
+			d.colorizer = colorizeUnstyled
+			return d.colorizer(code, str)
+		}
 		d.colorizer = newColorizer()
 	}
 	return d.colorizer(code, str)
@@ -319,6 +335,10 @@ func (d *Dumper) colorize(code, str string) string {
 // ensureColorizer initializes the colorizer when none is configured.
 func (d *Dumper) ensureColorizer() {
 	if d.colorizer == nil {
+		if d.disableColor {
+			d.colorizer = colorizeUnstyled
+			return
+		}
 		d.colorizer = newColorizer()
 	}
 }
