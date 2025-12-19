@@ -70,11 +70,7 @@ type diffDumpPair struct {
 
 // diffDumps builds the left and right dump strings, aligning reference ids.
 func (d *Dumper) diffDumps(a, b any) diffDumpPair {
-	d.referenceMap = map[uintptr]int{}
-	d.nextRefID = 1
 	leftDump := d.dumpStrNoHeader(a)
-	d.referenceMap = map[uintptr]int{}
-	d.nextRefID = 1
 	rightDump := d.dumpStrNoHeader(b)
 
 	if reflect.TypeOf(a) != reflect.TypeOf(b) {
@@ -90,10 +86,11 @@ func (d *Dumper) diffDumps(a, b any) diffDumpPair {
 // dumpStrNoHeader renders a dump without the header line.
 func (d *Dumper) dumpStrNoHeader(vs ...any) string {
 	d.ensureColorizer()
+	state := newDumpState()
 
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	d.writeDump(tw, vs...)
+	d.writeDump(tw, state, vs...)
 	tw.Flush()
 	return sb.String()
 }

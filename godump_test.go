@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"text/tabwriter"
 	"time"
@@ -72,6 +73,39 @@ func TestCycleReference(t *testing.T) {
 	n.Next = n
 	out := dumpStrT(t, n)
 	assert.Contains(t, out, "↩︎ &1")
+}
+
+func TestConcurrentDumpReferenceIDs(t *testing.T) {
+	type Node struct {
+		Next *Node
+	}
+
+	d := NewDumper()
+	d.colorizer = colorizeUnstyled
+
+	const runs = 50
+	results := make(chan string, runs)
+
+	var wg sync.WaitGroup
+	wg.Add(runs)
+
+	for i := 0; i < runs; i++ {
+		go func() {
+			defer wg.Done()
+
+			n := &Node{}
+			n.Next = n
+			results <- d.DumpStr(n)
+		}()
+	}
+
+	wg.Wait()
+	close(results)
+
+	for out := range results {
+		assert.Contains(t, out, "↩︎ &1")
+		assert.NotContains(t, out, "↩︎ &2")
+	}
 }
 
 func TestMaxDepth(t *testing.T) {
@@ -239,7 +273,7 @@ func TestUnreadableFallback(t *testing.T) {
 	var ch chan int // nil typed value, not interface
 	rv := reflect.ValueOf(ch)
 
-	newDumperT(t).printValue(tw, rv, 0)
+	newDumperT(t).printValue(tw, rv, 0, newDumpState())
 	tw.Flush()
 
 	output := b.String()
@@ -259,7 +293,7 @@ func TestUnreadableFieldFallback(t *testing.T) {
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
 
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 
 	out := sb.String()
@@ -312,7 +346,7 @@ func TestDefaultFallback_Unreadable(t *testing.T) {
 
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "<invalid>")
@@ -323,7 +357,7 @@ func TestPrintValue_Uintptr(t *testing.T) {
 	val := uintptr(12345)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(val), 0)
+	newDumperT(t).printValue(tw, reflect.ValueOf(val), 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "12345")
@@ -335,7 +369,7 @@ func TestPrintValue_UnsafePointer(t *testing.T) {
 	up := unsafe.Pointer(&i)
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(up), 0)
+	newDumperT(t).printValue(tw, reflect.ValueOf(up), 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "unsafe.Pointer")
@@ -345,7 +379,7 @@ func TestPrintValue_Func(t *testing.T) {
 	fn := func() {}
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, reflect.ValueOf(fn), 0)
+	newDumperT(t).printValue(tw, reflect.ValueOf(fn), 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "func()")
@@ -487,7 +521,7 @@ func TestDefaultBranchFallback(t *testing.T) {
 	var v reflect.Value // zero reflect.Value
 	var sb strings.Builder
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 	if !strings.Contains(sb.String(), "<invalid>") {
 		t.Error("Expected default fallback for invalid reflect.Value")
@@ -751,7 +785,7 @@ func TestPrintValue_ChanNilBranch_Hardforce(t *testing.T) {
 	assert.True(t, v.IsNil())
 	assert.Equal(t, reflect.Chan, v.Kind())
 
-	newDumperT(t).printValue(tw, v, 0)
+	newDumperT(t).printValue(tw, v, 0, newDumpState())
 	tw.Flush()
 
 	assert.Contains(t, buf.String(), "customChan(nil)")

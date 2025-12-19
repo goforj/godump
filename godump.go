@@ -91,8 +91,6 @@ type Dumper struct {
 	writer             io.Writer
 	skippedStackFrames int
 	disableStringer    bool
-	nextRefID          int
-	referenceMap       map[uintptr]int
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -104,6 +102,20 @@ type Dumper struct {
 
 // Option defines a functional option for configuring a Dumper.
 type Option func(*Dumper) *Dumper
+
+// dumpState tracks reference ids for a single dump call.
+type dumpState struct {
+	nextRefID int
+	refs      map[uintptr]int
+}
+
+// newDumpState initializes per-dump reference tracking.
+func newDumpState() *dumpState {
+	return &dumpState{
+		nextRefID: 1,
+		refs:      map[uintptr]int{},
+	}
+}
 
 // WithMaxDepth allows to control how deep the structure will be dumped.
 // Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15
@@ -176,8 +188,6 @@ func NewDumper(opts ...Option) *Dumper {
 		maxItems:        defaultMaxItems,
 		maxStringLen:    defaultMaxStringLen,
 		disableStringer: defaultDisableStringer,
-		nextRefID:       1,
-		referenceMap:    map[uintptr]int{},
 		writer:          os.Stdout,
 		colorizer:       nil, // ensure no detection is made if we don't need it
 		callerFn:        runtime.Caller,
@@ -211,10 +221,11 @@ func DumpStr(vs ...any) string {
 // DumpStr returns a string representation of the values with colorized output.
 func (d *Dumper) DumpStr(vs ...any) string {
 	local := d.clone()
+	state := newDumpState()
 	var sb strings.Builder
 	local.printDumpHeader(&sb)
 	tw := tabwriter.NewWriter(&sb, 0, 0, 1, ' ', 0)
-	local.writeDump(tw, vs...)
+	local.writeDump(tw, state, vs...)
 	tw.Flush()
 	return sb.String()
 }
@@ -423,13 +434,11 @@ func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 	return sb.String()
 }
 
-func (d *Dumper) writeDump(w io.Writer, vs ...any) {
-	d.referenceMap = map[uintptr]int{} // reset each time
-	d.nextRefID = 1
+func (d *Dumper) writeDump(w io.Writer, state *dumpState, vs ...any) {
 	for _, v := range vs {
 		rv := reflect.ValueOf(v)
 		rv = makeAddressable(rv)
-		d.printValue(w, rv, 0)
+		d.printValue(w, rv, 0, state)
 		fmt.Fprintln(w)
 	}
 }
@@ -449,7 +458,7 @@ func (d *Dumper) getTypeString(t reflect.Type) string {
 	}
 }
 
-func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
+func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dumpState) {
 	if indent > d.maxDepth {
 		fmt.Fprint(w, d.colorize(colorGray, "... (max depth)"))
 		return
@@ -484,12 +493,12 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 
 	if v.Kind() == reflect.Ptr && v.CanAddr() {
 		ptr := v.Pointer()
-		if id, ok := d.referenceMap[ptr]; ok {
+		if id, ok := state.refs[ptr]; ok {
 			fmt.Fprintf(w, d.colorize(colorRef, "↩︎ &%d"), id)
 			return
 		} else {
-			d.referenceMap[ptr] = d.nextRefID
-			d.nextRefID++
+			state.refs[ptr] = state.nextRefID
+			state.nextRefID++
 		}
 	}
 
@@ -505,7 +514,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 
 	switch v.Kind() {
 	case reflect.Interface:
-		d.printValue(w, v.Elem(), indent)
+		d.printValue(w, v.Elem(), indent, state)
 	case reflect.Struct:
 		t := v.Type()
 		fmt.Fprintf(w, "%s {", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
@@ -525,7 +534,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 			if s := d.asStringer(fieldVal); s != "" {
 				fmt.Fprint(w, s)
 			} else {
-				d.printValue(w, fieldVal, indent+1)
+				d.printValue(w, fieldVal, indent+1, state)
 			}
 			fmt.Fprintln(w)
 		}
@@ -547,7 +556,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 			}
 			keyStr := fmt.Sprintf("%v", key.Interface())
 			indentPrint(w, indent+1, fmt.Sprintf(" %s => ", d.colorize(colorMeta, keyStr)))
-			d.printValue(w, v.MapIndex(key), indent+1)
+			d.printValue(w, v.MapIndex(key), indent+1, state)
 			fmt.Fprintln(w)
 		}
 		indentPrint(w, indent, "")
@@ -574,7 +583,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int) {
 				break
 			}
 			indentPrint(w, indent+1, fmt.Sprintf("%s => ", d.colorize(colorCyan, fmt.Sprintf("%d", i))))
-			d.printValue(w, v.Index(i), indent+1)
+			d.printValue(w, v.Index(i), indent+1, state)
 			fmt.Fprintln(w)
 		}
 		indentPrint(w, indent, "")
