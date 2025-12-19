@@ -117,11 +117,14 @@ func TestDiffTintHelpers(t *testing.T) {
 	d := NewDumper()
 	d.colorizer = colorizeUnstyled
 
-	line := d.tintLine("\x1b[33mabc\x1b[0m", colorRed)
+	line := d.tintLine(string(ansiEscape)+"[33mabc"+string(ansiEscape)+"[0m", colorRed)
 	assert.Equal(t, "abc", line)
 
-	assert.Equal(t, "abc", stripANSI("\x1b[31mabc\x1b[0m"))
+	assert.Equal(t, "abc", stripANSI(string(ansiEscape)+"[31mabc"+string(ansiEscape)+"[0m"))
 	assert.Equal(t, "abc", stripANSI("abc"))
+	assert.Equal(t, "foo", stripANSI("foo"+string(ansiEscape)))
+	assert.Equal(t, "foo", stripANSI("foo"+string(ansiEscape)+"["))
+	assert.Equal(t, "foo", stripANSI("foo"+string(ansiEscape)+"[31"))
 
 	html := `<span style="color:#999">x</span>`
 	assert.Equal(t, "x", stripHTMLSpans(html))

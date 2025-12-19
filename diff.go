@@ -218,44 +218,61 @@ func (d *Dumper) tintLine(line, colorCode string) string {
 	if isHTMLLine(line) {
 		return d.colorize(colorCode, stripHTMLSpans(line))
 	}
-	if strings.Contains(line, "\x1b[") {
-		return d.colorize(colorCode, stripANSI(line))
+	if strings.Contains(line, string(ansiEscape)+"[") {
+		line = stripANSI(line)
 	}
 	return d.colorize(colorCode, line)
 }
 
+const ansiEscape = '\x1b'
+
 // stripANSI removes ANSI escape sequences from a string.
 func stripANSI(s string) string {
 	var b strings.Builder
+
 	b.Grow(len(s))
-	for i := 0; i < len(s); i++ {
-		if s[i] != '\x1b' {
+	for i := 0; i < len(s); {
+		if s[i] != ansiEscape {
 			b.WriteByte(s[i])
+			i++
 			continue
 		}
+
+		// Skip ANSI CSI sequences like "\x1b[31m".
 		if i+1 < len(s) && s[i+1] == '[' {
 			i += 2
 			for i < len(s) && s[i] != 'm' {
 				i++
 			}
+			if i < len(s) {
+				i++ // consume 'm'
+			}
 			continue
 		}
+
+		// Drop lone escape byte.
+		i++
 	}
 	return b.String()
 }
 
 // stripHTMLSpans removes color span tags while preserving content.
 func stripHTMLSpans(s string) string {
+	const spanPrefix = `<span style="color:`
+	const spanSuffix = `">`
+
 	for {
-		start := strings.Index(s, `<span style="color:`)
+		start := strings.Index(s, spanPrefix)
 		if start == -1 {
 			break
 		}
-		end := strings.Index(s[start:], `">`)
-		if end == -1 {
+		rest := s[start+len(spanPrefix):]
+		before, _, ok := strings.Cut(rest, spanSuffix)
+		if !ok {
 			break
 		}
-		s = s[:start] + s[start+end+2:]
+		cut := start + len(spanPrefix) + len(before) + len(spanSuffix)
+		s = s[:start] + s[cut:]
 	}
 	return strings.ReplaceAll(s, "</span>", "")
 }

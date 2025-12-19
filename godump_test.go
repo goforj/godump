@@ -239,7 +239,7 @@ func TestDetectColorVariants(t *testing.T) {
 		assert.True(t, detectColor())
 
 		out := NewDumper().colorize(colorYellow, "test")
-		assert.Equal(t, "\x1b[33mtest\x1b[0m", out)
+		assert.Equal(t, string(ansiEscape)+"[33mtest"+string(ansiEscape)+"[0m", out)
 	})
 
 	t.Run("forcing no color", func(t *testing.T) {
@@ -255,13 +255,13 @@ func TestDetectColorVariants(t *testing.T) {
 		assert.True(t, detectColor())
 
 		out := NewDumper().colorize(colorYellow, "test")
-		assert.Equal(t, "\x1b[33mtest\x1b[0m", out)
+		assert.Equal(t, string(ansiEscape)+"[33mtest"+string(ansiEscape)+"[0m", out)
 	})
 }
 
 func TestHtmlColorizeUnknown(t *testing.T) {
 	// Color not in htmlColorMap
-	out := colorizeHTML("\033[999m", "test")
+	out := colorizeHTML(string(ansiEscape)+"[999m", "test")
 	assert.Contains(t, out, `<span style="color:`)
 	assert.Contains(t, out, "test")
 }
@@ -329,7 +329,7 @@ func TestPrimitiveTypes(t *testing.T) {
 }
 
 func TestEscapeControl_AllVariants(t *testing.T) {
-	in := "\n\t\r\v\f\x1b"
+	in := "\n\t\r\v\f" + string(ansiEscape)
 	out := escapeControl(in)
 
 	assert.Contains(t, out, `\n`)

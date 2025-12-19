@@ -77,12 +77,12 @@ godump.Dump(User{Name: "Alice"})
 ## Extended Usage (Snippets)
 
 ```go
-godump.DumpStr(v)  // return as string
-godump.DumpHTML(v) // return HTML output
-godump.DumpJSON(v) // print JSON directly
-godump.Fdump(w, v) // write to io.Writer
-godump.Dd(v)       // dump + exit
-godump.Diff(a, b)  // diff two values
+godump.DumpStr(v)     // return as string
+godump.DumpHTML(v)    // return HTML output
+godump.DumpJSON(v)    // print JSON directly
+godump.Fdump(w, v)    // write to io.Writer
+godump.Dd(v)          // dump + exit
+godump.Diff(a, b)     // diff two values
 godump.DiffStr(a, b)  // diff two values as string
 godump.DiffHTML(a, b) // diff two values as HTML
 ````
