@@ -314,6 +314,13 @@ d := godump.NewDumper()
 a := map[string]int{"a": 1}
 b := map[string]int{"a": 2}
 d.Diff(a, b)
+// <#diff // path:line
+// - #map[string]int {
+// -   a => 1 #int
+// - }
+// + #map[string]int {
+// +   a => 2 #int
+// + }
 ```
 
 ### <a id="diffhtml"></a>DiffHTML
@@ -441,6 +448,7 @@ d := godump.NewDumper()
 v := map[string]int{"a": 1}
 out := d.DumpStr(v)
 _ = out
+// "#map[string]int {\n  a => 1 #int\n}" #string
 ```
 
 ### <a id="fdump"></a>Fdump
@@ -451,9 +459,7 @@ Fdump writes the formatted dump of values to the given io.Writer.
 var b strings.Builder
 v := map[string]int{"a": 1}
 godump.Fdump(&b, v)
-// #map[string]int {
-//   a => 1 #int
-// }
+// outputs to strings builder
 ```
 
 ## HTML
@@ -479,13 +485,15 @@ _ = html
 _Example: dump HTML with a custom dumper_
 
 ```go
+d := godump.NewDumper()
 v := map[string]int{"a": 1}
 html := d.DumpHTML(v)
 _ = html
+fmt.Println(html)
 // <div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">
-// <span style="color:#999"><#dump // path:line</span>
+// <span style="color:#999"><#dump // examples/dumphtml/main.go:17</span>
 // <span style="color:#999">#map[string]int</span> {
-//  <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">1</span><span style="color:#999"> #int</span>
+//   <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">1</span><span style="color:#999"> #int</span>
 // }
 // </pre></div>
 ```
@@ -500,6 +508,7 @@ _Example: print JSON_
 
 ```go
 v := map[string]int{"a": 1}
+d := godump.NewDumper()
 d.DumpJSON(v)
 // {
 //   "a": 1
@@ -524,6 +533,7 @@ _Example: dump JSON string_
 
 ```go
 v := map[string]int{"a": 1}
+d := godump.NewDumper()
 out := d.DumpJSONStr(v)
 _ = out
 // {"a":1}
@@ -546,12 +556,10 @@ WithDisableStringer disables using the fmt.Stringer output.
 When enabled, the underlying type is rendered instead of String().
 
 ```go
-v := map[string]int{"a": 1}
+v := time.Duration(3)
 d := godump.NewDumper(godump.WithDisableStringer(true))
 d.Dump(v)
-// #map[string]int {
-//   a => 1 #int
-// }
+// 3 #time.Duration
 ```
 
 ### <a id="withmaxdepth"></a>WithMaxDepth
@@ -560,11 +568,13 @@ WithMaxDepth limits how deep the structure will be dumped.
 Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15.
 
 ```go
-v := map[string]int{"a": 1}
-d := godump.NewDumper(godump.WithMaxDepth(3))
+v := map[string]map[string]int{"a": {"b": 1}}
+d := godump.NewDumper(godump.WithMaxDepth(1))
 d.Dump(v)
 // #map[string]int {
-//   a => 1 #int
+//   a => #map[string]int {
+//     b => ... (max depth)
+//   }
 // }
 ```
 
@@ -604,6 +614,7 @@ WithNoColor disables colorized output for the dumper.
 v := map[string]int{"a": 1}
 d := godump.NewDumper(godump.WithNoColor())
 d.Dump(v)
+// (prints without color)
 // #map[string]int {
 //   a => 1 #int
 // }
@@ -618,6 +629,7 @@ This is useful when godump is wrapped and the actual call site is deeper.
 v := map[string]int{"a": 1}
 d := godump.NewDumper(godump.WithSkipStackFrames(2))
 d.Dump(v)
+// <#dump // ../../../../usr/local/go/src/runtime/asm_arm64.s:1223
 // #map[string]int {
 //   a => 1 #int
 // }

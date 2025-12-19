@@ -126,11 +126,13 @@ func newDumpState() *dumpState {
 //
 // Example: limit depth
 //
-//	v := map[string]int{"a": 1}
-//	d := godump.NewDumper(godump.WithMaxDepth(3))
+//	v := map[string]map[string]int{"a": {"b": 1}}
+//	d := godump.NewDumper(godump.WithMaxDepth(1))
 //	d.Dump(v)
 //	// #map[string]int {
-//	//   a => 1 #int
+//	//   a => #map[string]int {
+//	//     b => ... (max depth)
+//	//   }
 //	// }
 func WithMaxDepth(n int) Option {
 	return func(d *Dumper) *Dumper {
@@ -211,6 +213,7 @@ func WithWriter(w io.Writer) Option {
 //	v := map[string]int{"a": 1}
 //	d := godump.NewDumper(godump.WithSkipStackFrames(2))
 //	d.Dump(v)
+//	// <#dump // ../../../../usr/local/go/src/runtime/asm_arm64.s:1223
 //	// #map[string]int {
 //	//   a => 1 #int
 //	// }
@@ -229,12 +232,10 @@ func WithSkipStackFrames(n int) Option {
 //
 // Example: show raw types
 //
-//	v := map[string]int{"a": 1}
+//	v := time.Duration(3)
 //	d := godump.NewDumper(godump.WithDisableStringer(true))
 //	d.Dump(v)
-//	// #map[string]int {
-//	//   a => 1 #int
-//	// }
+//	// 3 #time.Duration
 func WithDisableStringer(b bool) Option {
 	return func(d *Dumper) *Dumper {
 		d.disableStringer = b
@@ -250,6 +251,7 @@ func WithDisableStringer(b bool) Option {
 //	v := map[string]int{"a": 1}
 //	d := godump.NewDumper(godump.WithNoColor())
 //	d.Dump(v)
+//	// (prints without color)
 //	// #map[string]int {
 //	//   a => 1 #int
 //	// }
@@ -329,9 +331,7 @@ func (d *Dumper) Dump(vs ...any) {
 //	var b strings.Builder
 //	v := map[string]int{"a": 1}
 //	godump.Fdump(&b, v)
-//	// #map[string]int {
-//	//   a => 1 #int
-//	// }
+//	// outputs to strings builder
 func Fdump(w io.Writer, vs ...any) {
 	NewDumper(WithWriter(w)).Dump(vs...)
 }
@@ -376,6 +376,7 @@ func (d *Dumper) DumpStr(vs ...any) string {
 // Example: dump JSON string
 //
 //	v := map[string]int{"a": 1}
+//	d := godump.NewDumper()
 //	out := d.DumpJSONStr(v)
 //	_ = out
 //	// {"a":1}
@@ -404,6 +405,7 @@ func (d *Dumper) DumpJSONStr(vs ...any) string {
 // Example: print JSON
 //
 //	v := map[string]int{"a": 1}
+//	d := godump.NewDumper()
 //	d.DumpJSON(v)
 //	// {
 //	//   "a": 1
@@ -436,13 +438,15 @@ func DumpHTML(vs ...any) string {
 //
 // Example: dump HTML with a custom dumper
 //
+//	d := godump.NewDumper()
 //	v := map[string]int{"a": 1}
 //	html := d.DumpHTML(v)
 //	_ = html
+//	fmt.Println(html)
 //	// <div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">
-//	// <span style="color:#999"><#dump // path:line</span>
+//	// <span style="color:#999"><#dump // examples/dumphtml/main.go:17</span>
 //	// <span style="color:#999">#map[string]int</span> {
-//	//  <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">1</span><span style="color:#999"> #int</span>
+//	//   <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">1</span><span style="color:#999"> #int</span>
 //	// }
 //	// </pre></div>
 func (d *Dumper) DumpHTML(vs ...any) string {

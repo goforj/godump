@@ -13,6 +13,7 @@ func main() {
 	v := map[string]int{"a": 1}
 	d := godump.NewDumper(godump.WithSkipStackFrames(2))
 	d.Dump(v)
+	// <#dump // ../../../../usr/local/go/src/runtime/asm_arm64.s:1223
 	// #map[string]int {
 	//   a => 1 #int
 	// }

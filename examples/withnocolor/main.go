@@ -12,6 +12,7 @@ func main() {
 	v := map[string]int{"a": 1}
 	d := godump.NewDumper(godump.WithNoColor())
 	d.Dump(v)
+	// (prints without color)
 	// #map[string]int {
 	//   a => 1 #int
 	// }
