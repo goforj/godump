@@ -208,14 +208,14 @@ func TestDumpHTML(t *testing.T) {
 }
 
 func TestDumpHTMLNoColor(t *testing.T) {
-	html := NewDumper(WithNoColor(true)).DumpHTML(map[string]string{"foo": "bar"})
+	html := NewDumper(WithNoColor()).DumpHTML(map[string]string{"foo": "bar"})
 	assert.NotContains(t, html, `<span style="color:`)
 	assert.Contains(t, html, `foo`)
 	assert.Contains(t, html, `bar`)
 }
 
 func TestDumpStrNoColor(t *testing.T) {
-	out := NewDumper(WithNoColor(true)).DumpStr("x")
+	out := NewDumper(WithNoColor()).DumpStr("x")
 	assert.NotContains(t, out, string(ansiEscape))
 	assert.Contains(t, out, `"x"`)
 }
@@ -276,7 +276,7 @@ func TestDetectColorVariants(t *testing.T) {
 func TestWithNoColorOverridesColorDetection(t *testing.T) {
 	t.Setenv("FORCE_COLOR", "1")
 
-	out := NewDumper(WithNoColor(true)).colorize(colorYellow, "test")
+	out := NewDumper(WithNoColor()).colorize(colorYellow, "test")
 	assert.Equal(t, "test", out)
 }
 

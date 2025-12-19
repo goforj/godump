@@ -184,12 +184,10 @@ func WithDisableStringer(b bool) Option {
 }
 
 // WithNoColor disables colorized output for the dumper.
-func WithNoColor(b bool) Option {
+func WithNoColor() Option {
 	return func(d *Dumper) *Dumper {
-		d.disableColor = b
-		if b {
-			d.colorizer = colorizeUnstyled
-		}
+		d.disableColor = true
+		d.colorizer = colorizeUnstyled
 		return d
 	}
 }

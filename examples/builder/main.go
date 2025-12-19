@@ -81,7 +81,7 @@ func main() {
 		godump.WithWriter(os.Stdout),
 		godump.WithSkipStackFrames(10),
 		godump.WithDisableStringer(false),
-		godump.WithNoColor(false),
+		godump.WithNoColor(),
 	)
 
 	// Using the custom dumper
