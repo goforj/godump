@@ -243,19 +243,19 @@ func WithDisableStringer(b bool) Option {
 	}
 }
 
-// WithNoColor disables colorized output for the dumper.
+// WithoutColor disables colorized output for the dumper.
 // @group Options
 //
 // Example: disable colors
 //
 //	v := map[string]int{"a": 1}
-//	d := godump.NewDumper(godump.WithNoColor())
+//	d := godump.NewDumper(godump.WithoutColor())
 //	d.Dump(v)
 //	// (prints without color)
 //	// #map[string]int {
 //	//   a => 1 #int
 //	// }
-func WithNoColor() Option {
+func WithoutColor() Option {
 	return func(d *Dumper) *Dumper {
 		d.disableColor = true
 		d.colorizer = colorizeUnstyled

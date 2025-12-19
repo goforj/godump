@@ -11,7 +11,7 @@
     <a href="https://goreportcard.com/report/github.com/goforj/godump"><img src="https://goreportcard.com/badge/github.com/goforj/godump" alt="Go Report Card"></a>
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
 <!-- test-count:embed:start -->
-    <img src="https://img.shields.io/badge/tests-126-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-127-brightgreen" alt="Tests">
 <!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
@@ -131,7 +131,7 @@ godump.NewDumper(
     godump.WithWriter(os.Stdout),      // default: os.Stdout
     godump.WithSkipStackFrames(10),    // default: 10
     godump.WithDisableStringer(false), // default: false
-    godump.WithNoColor(),              // default: false
+    godump.WithoutColor(),              // default: false
 ).Dump(v)
 ```
 
@@ -236,7 +236,7 @@ If a pointer has already been printed:
 | **Dump** | [Dd](#dd) [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithNoColor](#withnocolor) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) |
+| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) |
 
 
 ## Builder
@@ -603,20 +603,6 @@ d.Dump(v)
 // "hello…" #string
 ```
 
-### <a id="withnocolor"></a>WithNoColor
-
-WithNoColor disables colorized output for the dumper.
-
-```go
-v := map[string]int{"a": 1}
-d := godump.NewDumper(godump.WithNoColor())
-d.Dump(v)
-// (prints without color)
-// #map[string]int {
-//   a => 1 #int
-// }
-```
-
 ### <a id="withskipstackframes"></a>WithSkipStackFrames
 
 WithSkipStackFrames skips additional stack frames for header reporting.
@@ -641,6 +627,20 @@ var b strings.Builder
 v := map[string]int{"a": 1}
 d := godump.NewDumper(godump.WithWriter(&b))
 d.Dump(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+### <a id="withoutcolor"></a>WithoutColor
+
+WithoutColor disables colorized output for the dumper.
+
+```go
+v := map[string]int{"a": 1}
+d := godump.NewDumper(godump.WithoutColor())
+d.Dump(v)
+// (prints without color)
 // #map[string]int {
 //   a => 1 #int
 // }
