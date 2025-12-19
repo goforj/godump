@@ -56,7 +56,9 @@ func (d *Dumper) DiffHTML(a, b any) string {
 	sb.WriteString(`<div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
 
 	htmlDumper := d.clone()
-	htmlDumper.colorizer = colorizeHTML
+	if !htmlDumper.disableColor {
+		htmlDumper.colorizer = colorizeHTML
+	}
 
 	sb.WriteString(htmlDumper.DiffStr(a, b))
 	sb.WriteString("</pre></div>")
@@ -203,6 +205,10 @@ func (d *Dumper) diffPrefix(kind diffKind) string {
 
 // diffTintLine tints a full diff line based on change type.
 func (d *Dumper) diffTintLine(line string, kind diffKind) string {
+	if d.disableColor {
+		return line
+	}
+
 	switch kind {
 	case diffDelete:
 		return d.tintBackgroundLine(line, colorRedBg, "#221010")
