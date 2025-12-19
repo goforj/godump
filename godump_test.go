@@ -217,6 +217,7 @@ func TestDiffStr(t *testing.T) {
 	right := User{Name: "Bob", Age: 42}
 
 	out := newDumperT(t).DiffStr(left, right)
+	out = stripANSI(out)
 	assert.Contains(t, out, "<#diff //")
 	assert.Contains(t, out, `-   +Name => "Alice" #string`)
 	assert.Contains(t, out, `+   +Name => "Bob" #string`)

@@ -205,26 +205,29 @@ func (d *Dumper) diffPrefix(kind diffKind) string {
 func (d *Dumper) diffTintLine(line string, kind diffKind) string {
 	switch kind {
 	case diffDelete:
-		return d.tintLine(line, colorRed)
+		return d.tintBackgroundLine(line, colorRedBg, "#221010")
 	case diffInsert:
-		return d.tintLine(line, colorGreen)
+		return d.tintBackgroundLine(line, colorGreenBg, "#102216")
 	default:
 		return line
 	}
 }
 
-// tintLine strips any existing styling and applies a full-line color.
-func (d *Dumper) tintLine(line, colorCode string) string {
+// tintBackgroundLine applies a full-line background while preserving text colors.
+func (d *Dumper) tintBackgroundLine(line, bgCode, bgHex string) string {
 	if isHTMLLine(line) {
-		return d.colorize(colorCode, stripHTMLSpans(line))
+		return `<span style="background-color:` + bgHex + `; display:block; width:100%;">` + line + `</span>`
 	}
+
 	if strings.Contains(line, string(ansiEscape)+"[") {
-		line = stripANSI(line)
+		return bgCode + strings.ReplaceAll(line, colorReset, colorReset+bgCode) + ansiEraseLine + colorReset
 	}
-	return d.colorize(colorCode, line)
+
+	return bgCode + line + ansiEraseLine + colorReset
 }
 
 const ansiEscape = '\x1b'
+const ansiEraseLine = "\x1b[K"
 
 // stripANSI removes ANSI escape sequences from a string.
 func stripANSI(s string) string {
@@ -238,14 +241,14 @@ func stripANSI(s string) string {
 			continue
 		}
 
-		// Skip ANSI CSI sequences like "\x1b[31m".
+		// Skip ANSI CSI sequences like "\x1b[31m" or "\x1b[K".
 		if i+1 < len(s) && s[i+1] == '[' {
 			i += 2
-			for i < len(s) && s[i] != 'm' {
+			for i < len(s) && (s[i] < '@' || s[i] > '~') {
 				i++
 			}
 			if i < len(s) {
-				i++ // consume 'm'
+				i++ // consume final byte
 			}
 			continue
 		}

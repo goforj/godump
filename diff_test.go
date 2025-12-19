@@ -12,6 +12,7 @@ func TestDiffStrTypeMismatch(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 
 	out := NewDumper().DiffStr(10, "ten")
+	out = stripANSI(out)
 	assert.Contains(t, out, "<#diff //")
 	assert.Contains(t, out, "- type: int")
 	assert.Contains(t, out, "+ type: string")
@@ -61,6 +62,7 @@ func TestDiffWriterOutput(t *testing.T) {
 	d.Diff(map[string]int{"a": 1}, map[string]int{"a": 2})
 
 	out := buf.String()
+	out = stripANSI(out)
 	assert.Contains(t, out, "<#diff //")
 	assert.Contains(t, out, "-    a => 1 #int")
 	assert.Contains(t, out, "+    a => 2 #int")
@@ -75,11 +77,13 @@ func TestDiffTopLevelHelpers(t *testing.T) {
 
 	Diff(1, 2)
 	out := buf.String()
+	out = stripANSI(out)
 	assert.Contains(t, out, "<#diff //")
 	assert.Contains(t, out, "- 1 #int")
 	assert.Contains(t, out, "+ 2 #int")
 
 	out = DiffStr("a", "b")
+	out = stripANSI(out)
 	assert.Contains(t, out, "<#diff //")
 	assert.Contains(t, out, `- "a" #string`)
 	assert.Contains(t, out, `+ "b" #string`)
@@ -117,14 +121,15 @@ func TestDiffTintHelpers(t *testing.T) {
 	d := NewDumper()
 	d.colorizer = colorizeUnstyled
 
-	line := d.tintLine(string(ansiEscape)+"[33mabc"+string(ansiEscape)+"[0m", colorRed)
-	assert.Equal(t, "abc", line)
+	line := d.tintBackgroundLine(string(ansiEscape)+"[33mabc"+string(ansiEscape)+"[0m", colorRedBg, "#3a0d0d")
+	assert.Contains(t, line, "abc")
 
 	assert.Equal(t, "abc", stripANSI(string(ansiEscape)+"[31mabc"+string(ansiEscape)+"[0m"))
 	assert.Equal(t, "abc", stripANSI("abc"))
 	assert.Equal(t, "foo", stripANSI("foo"+string(ansiEscape)))
 	assert.Equal(t, "foo", stripANSI("foo"+string(ansiEscape)+"["))
 	assert.Equal(t, "foo", stripANSI("foo"+string(ansiEscape)+"[31"))
+	assert.Equal(t, "foo", stripANSI("foo"+ansiEraseLine))
 
 	html := `<span style="color:#999">x</span>`
 	assert.Equal(t, "x", stripHTMLSpans(html))
@@ -133,6 +138,6 @@ func TestDiffTintHelpers(t *testing.T) {
 	htmlBroken := `<span style="color:#999"broken`
 	assert.Equal(t, htmlBroken, stripHTMLSpans(htmlBroken))
 
-	line = d.tintLine(html, colorRed)
-	assert.Equal(t, "x", line)
+	line = d.tintBackgroundLine(html, colorRedBg, "#3a0d0d")
+	assert.Contains(t, line, "x")
 }

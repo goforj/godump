@@ -20,6 +20,8 @@ const (
 	colorYellow  = "\033[33m"
 	colorRed     = "\033[31m"
 	colorGreen   = "\033[32m"
+	colorRedBg   = "\033[48;2;34;16;16m"
+	colorGreenBg = "\033[48;2;16;34;22m"
 	colorLime    = "\033[1;38;5;113m"
 	colorCyan    = "\033[38;5;38m"
 	colorNote    = "\033[38;5;38m"
