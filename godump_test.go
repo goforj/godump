@@ -207,6 +207,19 @@ func TestDumpHTML(t *testing.T) {
 	assert.Contains(t, html, `bar`)
 }
 
+func TestDumpHTMLNoColor(t *testing.T) {
+	html := NewDumper(WithNoColor(true)).DumpHTML(map[string]string{"foo": "bar"})
+	assert.NotContains(t, html, `<span style="color:`)
+	assert.Contains(t, html, `foo`)
+	assert.Contains(t, html, `bar`)
+}
+
+func TestDumpStrNoColor(t *testing.T) {
+	out := NewDumper(WithNoColor(true)).DumpStr("x")
+	assert.NotContains(t, out, string(ansiEscape))
+	assert.Contains(t, out, `"x"`)
+}
+
 func TestDiffStr(t *testing.T) {
 	type User struct {
 		Name string
@@ -257,6 +270,57 @@ func TestDetectColorVariants(t *testing.T) {
 
 		out := NewDumper().colorize(colorYellow, "test")
 		assert.Equal(t, string(ansiEscape)+"[33mtest"+string(ansiEscape)+"[0m", out)
+	})
+}
+
+func TestWithNoColorOverridesColorDetection(t *testing.T) {
+	t.Setenv("FORCE_COLOR", "1")
+
+	out := NewDumper(WithNoColor(true)).colorize(colorYellow, "test")
+	assert.Equal(t, "test", out)
+}
+
+func TestColorizeWithPresetColorizer(t *testing.T) {
+	d := NewDumper()
+	d.colorizer = colorizeUnstyled
+
+	out := d.colorize(colorYellow, "test")
+	assert.Equal(t, "test", out)
+}
+
+func TestColorizeWithDisableColorFlag(t *testing.T) {
+	d := NewDumper()
+	d.disableColor = true
+
+	out := d.colorize(colorYellow, "test")
+	assert.Equal(t, "test", out)
+}
+
+func TestEnsureColorizer(t *testing.T) {
+	t.Run("disable color", func(t *testing.T) {
+		d := NewDumper()
+		d.disableColor = true
+
+		d.ensureColorizer()
+		out := d.colorizer(colorYellow, "test")
+		assert.Equal(t, "test", out)
+	})
+
+	t.Run("detect color", func(t *testing.T) {
+		d := NewDumper()
+
+		d.ensureColorizer()
+		out := d.colorizer(colorYellow, "test")
+		assert.Equal(t, string(ansiEscape)+"[33mtest"+string(ansiEscape)+"[0m", out)
+	})
+
+	t.Run("already set", func(t *testing.T) {
+		d := NewDumper()
+		d.colorizer = colorizeUnstyled
+
+		d.ensureColorizer()
+		out := d.colorizer(colorYellow, "test")
+		assert.Equal(t, "test", out)
 	})
 }
 
