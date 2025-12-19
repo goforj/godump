@@ -12,7 +12,11 @@ import (
 	"testing"
 )
 
+var errGoBuildFailed = errors.New("go build failed")
+
 func TestExamplesBuild(t *testing.T) {
+	t.Parallel()
+
 	examplesDir := "examples"
 
 	entries, err := os.ReadDir(examplesDir)
@@ -59,13 +63,14 @@ func buildExampleWithoutTags(exampleDir string) error {
 
 	tmpDir, err := os.MkdirTemp("", "example-overlay-*")
 	if err != nil {
-		return err
+		return fmt.Errorf("mkdir temp dir: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
 	tmpFile := filepath.Join(tmpDir, "main.go")
-	if err := os.WriteFile(tmpFile, clean, 0644); err != nil {
-		return err
+	err = os.WriteFile(tmpFile, clean, 0o600)
+	if err != nil {
+		return fmt.Errorf("write temp main.go: %w", err)
 	}
 
 	overlay := map[string]any{
@@ -76,12 +81,13 @@ func buildExampleWithoutTags(exampleDir string) error {
 
 	overlayJSON, err := json.Marshal(overlay)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal overlay: %w", err)
 	}
 
 	overlayPath := filepath.Join(tmpDir, "overlay.json")
-	if err := os.WriteFile(overlayPath, overlayJSON, 0644); err != nil {
-		return err
+	err = os.WriteFile(overlayPath, overlayJSON, 0o600)
+	if err != nil {
+		return fmt.Errorf("write overlay: %w", err)
 	}
 
 	cmd := exec.Command(
@@ -95,7 +101,7 @@ func buildExampleWithoutTags(exampleDir string) error {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return errors.New(stderr.String())
+		return fmt.Errorf("%w: %s", errGoBuildFailed, stderr.String())
 	}
 
 	return nil
