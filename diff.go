@@ -191,9 +191,9 @@ func diffLines(a, b []string) []diffLine {
 func (d *Dumper) diffPrefix(kind diffKind) string {
 	switch kind {
 	case diffDelete:
-		return d.colorize(colorYellow, "-") + " "
+		return d.colorize(colorRed, "-") + " "
 	case diffInsert:
-		return d.colorize(colorLime, "+") + " "
+		return d.colorize(colorGreen, "+") + " "
 	default:
 		return "  "
 	}

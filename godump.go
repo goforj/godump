@@ -18,6 +18,8 @@ const (
 	colorReset   = "\033[0m"
 	colorGray    = "\033[90m"
 	colorYellow  = "\033[33m"
+	colorRed     = "\033[31m"
+	colorGreen   = "\033[32m"
 	colorLime    = "\033[1;38;5;113m"
 	colorCyan    = "\033[38;5;38m"
 	colorNote    = "\033[38;5;38m"
@@ -69,6 +71,8 @@ func colorizeANSI(code, str string) string {
 var htmlColorMap = map[string]string{
 	colorGray:    "#999",
 	colorYellow:  "#ffb400",
+	colorRed:     "#ff5f5f",
+	colorGreen:   "#55d655",
 	colorLime:    "#80ff80",
 	colorNote:    "#40c0ff",
 	colorRef:     "#aaa",
