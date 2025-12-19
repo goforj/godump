@@ -26,15 +26,12 @@ linters:
     - nlreturn
     - whitespace
     - wsl
-    - wsl_v5
 
     # nice to have
     - usetesting
     - unused
     - testifylint
     - perfsprint
-    - embeddedstructfieldcheck
-    - noinlineerr
 
   settings:
 
