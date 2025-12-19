@@ -85,6 +85,10 @@ func run() error {
 		//env.Dump(fd)
 	}
 
+	if err := writeExamplesTest(root, funcs, modPath, pkgName); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -482,4 +486,122 @@ func containsCodeUsage(code, token string) bool {
 		}
 	}
 	return false
+}
+
+func writeExamplesTest(root string, funcs map[string]*FuncDoc, importPath, pkgName string) error {
+	var docs []*FuncDoc
+	for _, fd := range funcs {
+		if len(fd.Examples) == 0 {
+			continue
+		}
+		docs = append(docs, fd)
+	}
+
+	if len(docs) == 0 {
+		return nil
+	}
+
+	sort.Slice(docs, func(i, j int) bool {
+		return docs[i].Name < docs[j].Name
+	})
+
+	imports := map[string]bool{}
+	for _, fd := range docs {
+		for _, ex := range fd.Examples {
+			code := ex.Code
+			if containsCodeUsage(code, "fmt.") {
+				imports["fmt"] = true
+			}
+			if containsCodeUsage(code, "strings.") {
+				imports["strings"] = true
+			}
+			if containsCodeUsage(code, "os.") {
+				imports["os"] = true
+			}
+			if containsCodeUsage(code, "context.") {
+				imports["context"] = true
+			}
+			if containsCodeUsage(code, "regexp.") {
+				imports["regexp"] = true
+			}
+			if containsCodeUsage(code, "redis.") {
+				imports["github.com/redis/go-redis/v9"] = true
+			}
+			if containsCodeUsage(code, "time.") {
+				imports["time"] = true
+			}
+			if containsCodeUsage(code, "gocron") {
+				imports["github.com/go-co-op/gocron/v2"] = true
+			}
+			if containsCodeUsage(code, "scheduler") {
+				imports["github.com/goforj/scheduler"] = true
+			}
+			if containsCodeUsage(code, "filepath.") {
+				imports["path/filepath"] = true
+			}
+			if containsCodeUsage(code, "godump.") {
+				imports[importPath] = true
+			}
+			if containsCodeUsage(code, "rand.") {
+				imports["crypto/rand"] = true
+			}
+			if containsCodeUsage(code, "base64.") {
+				imports["encoding/base64"] = true
+			}
+		}
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("package " + pkgName + "_test\n\n")
+
+	if len(imports) > 0 {
+		keys := make([]string, 0, len(imports))
+		for k := range imports {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+
+		if len(keys) == 1 {
+			buf.WriteString("import " + fmt.Sprintf("%q", keys[0]) + "\n\n")
+		} else {
+			buf.WriteString("import (\n")
+			for _, imp := range keys {
+				buf.WriteString("\t\"" + imp + "\"\n")
+			}
+			buf.WriteString(")\n\n")
+		}
+	}
+
+	for _, fd := range docs {
+		sort.Slice(fd.Examples, func(i, j int) bool {
+			return fd.Examples[i].Line < fd.Examples[j].Line
+		})
+
+		for i, ex := range fd.Examples {
+			name := "Example" + fd.Name + exampleSuffix(i)
+			buf.WriteString("func " + name + "() {\n")
+
+			code := strings.TrimLeft(ex.Code, "\n")
+			for _, line := range strings.Split(code, "\n") {
+				if strings.TrimSpace(line) == "" {
+					buf.WriteString("\n")
+					continue
+				}
+				buf.WriteString("\t" + line + "\n")
+			}
+			buf.WriteString("}\n\n")
+		}
+	}
+
+	return os.WriteFile(filepath.Join(root, "examples_test.go"), buf.Bytes(), 0o644)
+}
+
+func exampleSuffix(index int) string {
+	if index == 0 {
+		return ""
+	}
+	if index <= 26 {
+		return "_" + string(rune('a'+index-1))
+	}
+	return fmt.Sprintf("_example%d", index+1)
 }
