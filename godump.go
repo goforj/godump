@@ -494,7 +494,7 @@ func DumpJSONStr(vs ...any) string {
 }
 
 // Dd is a debug function that prints the values and exits the program.
-// @group Debug
+// @group Dump
 //
 // Example: dump and exit
 //

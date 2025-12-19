@@ -232,9 +232,8 @@ If a pointer has already been printed:
 | Group | Functions |
 |------:|-----------|
 | **Builder** | [NewDumper](#newdumper) |
-| **Debug** | [Dd](#dd) |
 | **Diff** | [Diff](#diff) [DiffHTML](#diffhtml) [DiffStr](#diffstr) |
-| **Dump** | [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
+| **Dump** | [Dd](#dd) [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) |
 | **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithNoColor](#withnocolor) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) |
@@ -254,33 +253,6 @@ d := godump.NewDumper(
 	godump.WithWriter(os.Stdout),
 )
 d.Dump(v)
-// #map[string]int {
-//   a => 1 #int
-// }
-```
-
-## Debug
-
-### <a id="dd"></a>Dd
-
-Dd is a debug function that prints the values and exits the program.
-
-_Example: dump and exit_
-
-```go
-v := map[string]int{"a": 1}
-godump.Dd(v)
-// #map[string]int {
-//   a => 1 #int
-// }
-```
-
-_Example: dump and exit with a custom dumper_
-
-```go
-d := godump.NewDumper()
-v := map[string]int{"a": 1}
-d.Dd(v)
 // #map[string]int {
 //   a => 1 #int
 // }
@@ -402,6 +374,31 @@ _ = out
 ```
 
 ## Dump
+
+### <a id="dd"></a>Dd
+
+Dd is a debug function that prints the values and exits the program.
+
+_Example: dump and exit_
+
+```go
+v := map[string]int{"a": 1}
+godump.Dd(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+_Example: dump and exit with a custom dumper_
+
+```go
+d := godump.NewDumper()
+v := map[string]int{"a": 1}
+d.Dd(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
 
 ### <a id="dump"></a>Dump
 
