@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"os"
@@ -378,45 +379,29 @@ func writeMain(base string, fd *FuncDoc, importPath string) error {
 		importPath: true,
 	}
 
+	importRules := []struct {
+		token string
+		path  string
+	}{
+		{token: "fmt.", path: "fmt"},
+		{token: "strings.", path: "strings"},
+		{token: "os.", path: "os"},
+		{token: "context.", path: "context"},
+		{token: "regexp.", path: "regexp"},
+		{token: "redis.", path: "github.com/redis/go-redis/v9"},
+		{token: "time.", path: "time"},
+		{token: "gocron", path: "github.com/go-co-op/gocron/v2"},
+		{token: "scheduler", path: "github.com/goforj/scheduler"},
+		{token: "filepath.", path: "path/filepath"},
+		{token: "godump.", path: "github.com/goforj/godump"},
+		{token: "rand.", path: "crypto/rand"},
+		{token: "base64.", path: "encoding/base64"},
+	}
 	for _, ex := range fd.Examples {
-		if strings.Contains(ex.Code, "fmt.") {
-			imports["fmt"] = true
-		}
-		if strings.Contains(ex.Code, "strings.") {
-			imports["strings"] = true
-		}
-		if containsCodeUsage(ex.Code, "os.") {
-			imports["os"] = true
-		}
-		if containsCodeUsage(ex.Code, "context.") {
-			imports["context"] = true
-		}
-		if containsCodeUsage(ex.Code, "regexp.") {
-			imports["regexp"] = true
-		}
-		if containsCodeUsage(ex.Code, "redis.") {
-			imports["github.com/redis/go-redis/v9"] = true
-		}
-		if containsCodeUsage(ex.Code, "time.") {
-			imports["time"] = true
-		}
-		if containsCodeUsage(ex.Code, "gocron") {
-			imports["github.com/go-co-op/gocron/v2"] = true
-		}
-		if containsCodeUsage(ex.Code, "scheduler") {
-			imports["github.com/goforj/scheduler"] = true
-		}
-		if containsCodeUsage(ex.Code, "filepath.") {
-			imports["path/filepath"] = true
-		}
-		if containsCodeUsage(ex.Code, "godump.") {
-			imports["github.com/goforj/godump"] = true
-		}
-		if containsCodeUsage(ex.Code, "rand.") {
-			imports["crypto/rand"] = true
-		}
-		if containsCodeUsage(ex.Code, "base64.") {
-			imports["encoding/base64"] = true
+		for _, rule := range importRules {
+			if containsCodeUsage(ex.Code, rule.token) {
+				imports[rule.path] = true
+			}
 		}
 	}
 
@@ -468,7 +453,12 @@ func writeMain(base string, fd *FuncDoc, importPath string) error {
 
 	buf.WriteString("}\n")
 
-	return os.WriteFile(filepath.Join(dir, "main.go"), buf.Bytes(), 0o644)
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("format example file: %w", err)
+	}
+
+	return os.WriteFile(filepath.Join(dir, "main.go"), formatted, 0o644)
 }
 
 func containsCodeUsage(code, token string) bool {
