@@ -11,21 +11,81 @@ import (
 )
 
 // Diff prints a diff between two values to stdout.
+// @group Diff
+//
+// Example: print diff
+//
+//	a := map[string]int{"a": 1}
+//	b := map[string]int{"a": 2}
+//	godump.Diff(a, b)
+//	// <#diff // path:line
+//	// - #map[string]int {
+//	// -   a => 1 #int
+//	// - }
+//	// + #map[string]int {
+//	// +   a => 2 #int
+//	// + }
 func Diff(a, b any) {
 	defaultDumper.Diff(a, b)
 }
 
 // Diff prints a diff between two values to the configured writer.
+// @group Diff
+//
+// Example: print diff with a custom dumper
+//
+//	d := godump.NewDumper()
+//	a := map[string]int{"a": 1}
+//	b := map[string]int{"a": 2}
+//	d.Diff(a, b)
+//	// <#diff // path:line
+//	// - #map[string]int {
+//	// -   a => 1 #int
+//	// - }
+//	// + #map[string]int {
+//	// +   a => 2 #int
+//	// + }
 func (d *Dumper) Diff(a, b any) {
 	fmt.Fprint(d.writer, d.DiffStr(a, b))
 }
 
 // DiffStr returns a string diff between two values.
+// @group Diff
+//
+// Example: diff string
+//
+//	a := map[string]int{"a": 1}
+//	b := map[string]int{"a": 2}
+//	out := godump.DiffStr(a, b)
+//	_ = out
+//	// <#diff // path:line
+//	// - #map[string]int {
+//	// -   a => 1 #int
+//	// - }
+//	// + #map[string]int {
+//	// +   a => 2 #int
+//	// + }
 func DiffStr(a, b any) string {
 	return defaultDumper.DiffStr(a, b)
 }
 
 // DiffStr returns a string diff between two values.
+// @group Diff
+//
+// Example: diff string with a custom dumper
+//
+//	d := godump.NewDumper()
+//	a := map[string]int{"a": 1}
+//	b := map[string]int{"a": 2}
+//	out := d.DiffStr(a, b)
+//	_ = out
+//	// <#diff // path:line
+//	// - #map[string]int {
+//	// -   a => 1 #int
+//	// - }
+//	// + #map[string]int {
+//	// +   a => 2 #int
+//	// + }
 func (d *Dumper) DiffStr(a, b any) string {
 	var sb strings.Builder
 	d.printDiffHeader(&sb)
@@ -46,11 +106,30 @@ func (d *Dumper) DiffStr(a, b any) string {
 }
 
 // DiffHTML returns an HTML diff between two values.
+// @group Diff
+//
+// Example: HTML diff
+//
+//	a := map[string]int{"a": 1}
+//	b := map[string]int{"a": 2}
+//	html := godump.DiffHTML(a, b)
+//	_ = html
+//	// (html diff)
 func DiffHTML(a, b any) string {
 	return defaultDumper.DiffHTML(a, b)
 }
 
 // DiffHTML returns an HTML diff between two values.
+// @group Diff
+//
+// Example: HTML diff with a custom dumper
+//
+//	d := godump.NewDumper()
+//	a := map[string]int{"a": 1}
+//	b := map[string]int{"a": 2}
+//	html := d.DiffHTML(a, b)
+//	_ = html
+//	// (html diff)
 func (d *Dumper) DiffHTML(a, b any) string {
 	var sb strings.Builder
 	sb.WriteString(`<div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")

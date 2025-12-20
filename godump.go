@@ -120,8 +120,21 @@ func newDumpState() *dumpState {
 	}
 }
 
-// WithMaxDepth allows to control how deep the structure will be dumped.
-// Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15
+// WithMaxDepth limits how deep the structure will be dumped.
+// Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15.
+// @group Options
+//
+// Example: limit depth
+//
+//	// Default: 15
+//	v := map[string]map[string]int{"a": {"b": 1}}
+//	d := godump.NewDumper(godump.WithMaxDepth(1))
+//	d.Dump(v)
+//	// #map[string]int {
+//	//   a => #map[string]int {
+//	//     b => ... (max depth)
+//	//   }
+//	// }
 func WithMaxDepth(n int) Option {
 	return func(d *Dumper) *Dumper {
 		if n >= 0 {
@@ -131,8 +144,21 @@ func WithMaxDepth(n int) Option {
 	}
 }
 
-// WithMaxItems allows to control how many items from an array, slice or maps can be printed.
-// Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100
+// WithMaxItems limits how many items from an array, slice, or map can be printed.
+// Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100.
+// @group Options
+//
+// Example: limit items
+//
+//	// Default: 100
+//	v := []int{1, 2, 3}
+//	d := godump.NewDumper(godump.WithMaxItems(2))
+//	d.Dump(v)
+//	// #[]int [
+//	//   0 => 1 #int
+//	//   1 => 2 #int
+//	//   ... (truncated)
+//	// ]
 func WithMaxItems(n int) Option {
 	return func(d *Dumper) *Dumper {
 		if n >= 0 {
@@ -142,8 +168,17 @@ func WithMaxItems(n int) Option {
 	}
 }
 
-// WithMaxStringLen allows to control how long can printed strings be.
-// Param n must be 0 or greater or this will be ignored, and default MaxStringLen will be 100000
+// WithMaxStringLen limits how long printed strings can be.
+// Param n must be 0 or greater or this will be ignored, and default MaxStringLen will be 100000.
+// @group Options
+//
+// Example: limit string length
+//
+//	// Default: 100000
+//	v := "hello world"
+//	d := godump.NewDumper(godump.WithMaxStringLen(5))
+//	d.Dump(v)
+//	// "hello…" #string
 func WithMaxStringLen(n int) Option {
 	return func(d *Dumper) *Dumper {
 		if n >= 0 {
@@ -153,7 +188,19 @@ func WithMaxStringLen(n int) Option {
 	}
 }
 
-// WithWriter allows to control the io output.
+// WithWriter routes output to the provided writer.
+// @group Options
+//
+// Example: write to buffer
+//
+//	// Default: stdout
+//	var b strings.Builder
+//	v := map[string]int{"a": 1}
+//	d := godump.NewDumper(godump.WithWriter(&b))
+//	d.Dump(v)
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
 func WithWriter(w io.Writer) Option {
 	return func(d *Dumper) *Dumper {
 		d.writer = w
@@ -161,10 +208,20 @@ func WithWriter(w io.Writer) Option {
 	}
 }
 
-// WithSkipStackFrames allows users to skip additional stack frames
-// on top of the frames that godump already skips internally.
-// This is useful when godump is wrapped in other functions or utilities,
-// and the actual call site is deeper in the stack.
+// WithSkipStackFrames skips additional stack frames for header reporting.
+// This is useful when godump is wrapped and the actual call site is deeper.
+// @group Options
+//
+// Example: skip wrapper frames
+//
+//	// Default: 0
+//	v := map[string]int{"a": 1}
+//	d := godump.NewDumper(godump.WithSkipStackFrames(2))
+//	d.Dump(v)
+//	// <#dump // ../../../../usr/local/go/src/runtime/asm_arm64.s:1223
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
 func WithSkipStackFrames(n int) Option {
 	return func(d *Dumper) *Dumper {
 		if n >= 0 {
@@ -174,8 +231,17 @@ func WithSkipStackFrames(n int) Option {
 	}
 }
 
-// WithDisableStringer will determine if the stringer value for types that
-// implement the stringer interface should be render instead of the actual type.
+// WithDisableStringer disables using the fmt.Stringer output.
+// When enabled, the underlying type is rendered instead of String().
+// @group Options
+//
+// Example: show raw types
+//
+//	// Default: false
+//	v := time.Duration(3)
+//	d := godump.NewDumper(godump.WithDisableStringer(true))
+//	d.Dump(v)
+//	// 3 #time.Duration
 func WithDisableStringer(b bool) Option {
 	return func(d *Dumper) *Dumper {
 		d.disableStringer = b
@@ -183,8 +249,20 @@ func WithDisableStringer(b bool) Option {
 	}
 }
 
-// WithNoColor disables colorized output for the dumper.
-func WithNoColor() Option {
+// WithoutColor disables colorized output for the dumper.
+// @group Options
+//
+// Example: disable colors
+//
+//	// Default: false
+//	v := map[string]int{"a": 1}
+//	d := godump.NewDumper(godump.WithoutColor())
+//	d.Dump(v)
+//	// (prints without color)
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
+func WithoutColor() Option {
 	return func(d *Dumper) *Dumper {
 		d.disableColor = true
 		d.colorizer = colorizeUnstyled
@@ -194,6 +272,19 @@ func WithNoColor() Option {
 
 // NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
+// @group Builder
+//
+// Example: build a custom dumper
+//
+//	v := map[string]int{"a": 1}
+//	d := godump.NewDumper(
+//		godump.WithMaxDepth(10),
+//		godump.WithWriter(os.Stdout),
+//	)
+//	d.Dump(v)
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
 func NewDumper(opts ...Option) *Dumper {
 	d := &Dumper{
 		maxDepth:        defaultMaxDepth,
@@ -211,26 +302,70 @@ func NewDumper(opts ...Option) *Dumper {
 }
 
 // Dump prints the values to stdout with colorized output.
+// @group Dump
+//
+// Example: print to stdout
+//
+//	v := map[string]int{"a": 1}
+//	godump.Dump(v)
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
 func Dump(vs ...any) {
 	defaultDumper.Dump(vs...)
 }
 
 // Dump prints the values to stdout with colorized output.
+// @group Dump
+//
+// Example: print with a custom dumper
+//
+//	d := godump.NewDumper()
+//	v := map[string]int{"a": 1}
+//	d.Dump(v)
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
 func (d *Dumper) Dump(vs ...any) {
 	fmt.Fprint(d.writer, d.DumpStr(vs...))
 }
 
 // Fdump writes the formatted dump of values to the given io.Writer.
+// @group Dump
+//
+// Example: dump to writer
+//
+//	var b strings.Builder
+//	v := map[string]int{"a": 1}
+//	godump.Fdump(&b, v)
+//	// outputs to strings builder
 func Fdump(w io.Writer, vs ...any) {
 	NewDumper(WithWriter(w)).Dump(vs...)
 }
 
 // DumpStr returns a string representation of the values with colorized output.
+// @group Dump
+//
+// Example: get a string dump
+//
+//	v := map[string]int{"a": 1}
+//	out := godump.DumpStr(v)
+//	godump.Dump(out)
+//	// "#map[string]int {\n  a => 1 #int\n}" #string
 func DumpStr(vs ...any) string {
 	return defaultDumper.DumpStr(vs...)
 }
 
 // DumpStr returns a string representation of the values with colorized output.
+// @group Dump
+//
+// Example: get a string dump with a custom dumper
+//
+//	d := godump.NewDumper()
+//	v := map[string]int{"a": 1}
+//	out := d.DumpStr(v)
+//	_ = out
+//	// "#map[string]int {\n  a => 1 #int\n}" #string
 func (d *Dumper) DumpStr(vs ...any) string {
 	local := d.clone()
 	state := newDumpState()
@@ -243,6 +378,15 @@ func (d *Dumper) DumpStr(vs ...any) string {
 }
 
 // DumpJSONStr pretty-prints values as JSON and returns it as a string.
+// @group JSON
+//
+// Example: dump JSON string
+//
+//	v := map[string]int{"a": 1}
+//	d := godump.NewDumper()
+//	out := d.DumpJSONStr(v)
+//	_ = out
+//	// {"a":1}
 func (d *Dumper) DumpJSONStr(vs ...any) string {
 	if len(vs) == 0 {
 		return `{"error": "DumpJSON called with no arguments"}`
@@ -263,17 +407,45 @@ func (d *Dumper) DumpJSONStr(vs ...any) string {
 }
 
 // DumpJSON prints a pretty-printed JSON string to the configured writer.
+// @group JSON
+//
+// Example: print JSON
+//
+//	v := map[string]int{"a": 1}
+//	d := godump.NewDumper()
+//	d.DumpJSON(v)
+//	// {
+//	//   "a": 1
+//	// }
 func (d *Dumper) DumpJSON(vs ...any) {
 	output := d.DumpJSONStr(vs...)
 	fmt.Fprintln(d.writer, output)
 }
 
 // DumpHTML dumps the values as HTML with colorized output.
+// @group HTML
+//
+// Example: dump HTML
+//
+//	v := map[string]int{"a": 1}
+//	html := godump.DumpHTML(v)
+//	_ = html
+//	// (html output)
 func DumpHTML(vs ...any) string {
 	return defaultDumper.DumpHTML(vs...)
 }
 
 // DumpHTML dumps the values as HTML with colorized output.
+// @group HTML
+//
+// Example: dump HTML with a custom dumper
+//
+//	d := godump.NewDumper()
+//	v := map[string]int{"a": 1}
+//	html := d.DumpHTML(v)
+//	_ = html
+//	fmt.Println(html)
+//	// (html output)
 func (d *Dumper) DumpHTML(vs ...any) string {
 	var sb strings.Builder
 	sb.WriteString(`<div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
@@ -292,21 +464,57 @@ func (d *Dumper) DumpHTML(vs ...any) string {
 // DumpJSON dumps the values as a pretty-printed JSON string.
 // If there is more than one value, they are dumped as a JSON array.
 // It returns an error string if marshaling fails.
+// @group JSON
+//
+// Example: print JSON
+//
+//	v := map[string]int{"a": 1}
+//	godump.DumpJSON(v)
+//	// {
+//	//   "a": 1
+//	// }
 func DumpJSON(vs ...any) {
 	defaultDumper.DumpJSON(vs...)
 }
 
 // DumpJSONStr dumps the values as a JSON string.
+// @group JSON
+//
+// Example: JSON string
+//
+//	v := map[string]int{"a": 1}
+//	out := godump.DumpJSONStr(v)
+//	_ = out
+//	// {"a":1}
 func DumpJSONStr(vs ...any) string {
 	return defaultDumper.DumpJSONStr(vs...)
 }
 
 // Dd is a debug function that prints the values and exits the program.
+// @group Dump
+//
+// Example: dump and exit
+//
+//	v := map[string]int{"a": 1}
+//	godump.Dd(v)
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
 func Dd(vs ...any) {
 	defaultDumper.Dd(vs...)
 }
 
 // Dd is a debug function that prints the values and exits the program.
+// @group Debug
+//
+// Example: dump and exit with a custom dumper
+//
+//	d := godump.NewDumper()
+//	v := map[string]int{"a": 1}
+//	d.Dd(v)
+//	// #map[string]int {
+//	//   a => 1 #int
+//	// }
 func (d *Dumper) Dd(vs ...any) {
 	d.Dump(vs...)
 	exitFunc(1)

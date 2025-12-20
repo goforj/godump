@@ -10,6 +10,9 @@
     <img src="https://img.shields.io/github/v/tag/goforj/godump?label=version&sort=semver" alt="Latest tag">
     <a href="https://goreportcard.com/report/github.com/goforj/godump"><img src="https://goreportcard.com/badge/github.com/goforj/godump" alt="Go Report Card"></a>
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
+<!-- test-count:embed:start -->
+    <img src="https://img.shields.io/badge/tests-127-brightgreen" alt="Tests">
+<!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
 
@@ -128,20 +131,25 @@ godump.NewDumper(
     godump.WithWriter(os.Stdout),      // default: os.Stdout
     godump.WithSkipStackFrames(10),    // default: 10
     godump.WithDisableStringer(false), // default: false
-    godump.WithNoColor(true),          // default: false
+    godump.WithoutColor(),             // default: false
 ).Dump(v)
 ```
 
-## Full Examples Directory
+## Contributing
 
-All runnable examples can be found under [`./examples`](./examples):
+Ensure that all tests pass, and you run ./docs/generate.sh to update the API index in the README before submitting a PR.
 
-- **Basic usage** → [`examples/basic/main.go`](./examples/basic/main.go)
-- **Extended usage** → [`examples/extended/main.go`](./examples/extended/main.go)
-- **Kitchen sink** → [`examples/kitchensink/main.go`](./examples/kitchensink/main.go)
-- **Builder API** → [`examples/builder/main.go`](./examples/builder/main.go)
-- **Diff** → [`examples/diff/main.go`](./examples/diff/main.go)
-- **Diff extended** → [`examples/diffextended/main.go`](./examples/diffextended/main.go)
+Ensure all public functions have documentation blocks with examples, as these are used to generate runnable examples and the API index.
+
+## Runnable Examples Directory
+
+Every function has a corresponding runnable example under [`./examples`](./examples).
+
+These examples are **generated directly from the documentation blocks** of each function, ensuring the docs and code never drift. These are the same examples you see here in the README and GoDoc.
+
+An automated test executes **every example** to verify it builds and runs successfully.
+
+This guarantees all examples are valid, up-to-date, and remain functional as the API evolves.
 
 <details>
 <summary><strong>📘 How to Read the Output</strong></summary>
@@ -216,3 +224,406 @@ If a pointer has already been printed:
 * ✅ time.Time (nicely formatted)
 
 </details>
+
+<!-- api:embed:start -->
+
+## API Index
+
+| Group | Functions |
+|------:|-----------|
+| **Builder** | [NewDumper](#newdumper) |
+| **Diff** | [Diff](#diff) [DiffHTML](#diffhtml) [DiffStr](#diffstr) |
+| **Dump** | [Dd](#dd) [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
+| **HTML** | [DumpHTML](#dumphtml) |
+| **JSON** | [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) |
+| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) |
+
+
+## Builder
+
+### <a id="newdumper"></a>NewDumper
+
+NewDumper creates a new Dumper with the given options applied.
+Defaults are used for any setting not overridden.
+
+```go
+v := map[string]int{"a": 1}
+d := godump.NewDumper(
+	godump.WithMaxDepth(10),
+	godump.WithWriter(os.Stdout),
+)
+d.Dump(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+## Diff
+
+### <a id="diff"></a>Diff
+
+Diff prints a diff between two values to stdout.
+
+_Example: print diff_
+
+```go
+a := map[string]int{"a": 1}
+b := map[string]int{"a": 2}
+godump.Diff(a, b)
+// <#diff // path:line
+// - #map[string]int {
+// -   a => 1 #int
+// - }
+// + #map[string]int {
+// +   a => 2 #int
+// + }
+```
+
+_Example: print diff with a custom dumper_
+
+```go
+d := godump.NewDumper()
+a := map[string]int{"a": 1}
+b := map[string]int{"a": 2}
+d.Diff(a, b)
+// <#diff // path:line
+// - #map[string]int {
+// -   a => 1 #int
+// - }
+// + #map[string]int {
+// +   a => 2 #int
+// + }
+```
+
+### <a id="diffhtml"></a>DiffHTML
+
+DiffHTML returns an HTML diff between two values.
+
+_Example: HTML diff_
+
+```go
+a := map[string]int{"a": 1}
+b := map[string]int{"a": 2}
+html := godump.DiffHTML(a, b)
+_ = html
+// (html diff)
+```
+
+_Example: HTML diff with a custom dumper_
+
+```go
+d := godump.NewDumper()
+a := map[string]int{"a": 1}
+b := map[string]int{"a": 2}
+html := d.DiffHTML(a, b)
+_ = html
+// (html diff)
+```
+
+### <a id="diffstr"></a>DiffStr
+
+DiffStr returns a string diff between two values.
+
+_Example: diff string_
+
+```go
+a := map[string]int{"a": 1}
+b := map[string]int{"a": 2}
+out := godump.DiffStr(a, b)
+_ = out
+// <#diff // path:line
+// - #map[string]int {
+// -   a => 1 #int
+// - }
+// + #map[string]int {
+// +   a => 2 #int
+// + }
+```
+
+_Example: diff string with a custom dumper_
+
+```go
+d := godump.NewDumper()
+a := map[string]int{"a": 1}
+b := map[string]int{"a": 2}
+out := d.DiffStr(a, b)
+_ = out
+// <#diff // path:line
+// - #map[string]int {
+// -   a => 1 #int
+// - }
+// + #map[string]int {
+// +   a => 2 #int
+// + }
+```
+
+## Dump
+
+### <a id="dd"></a>Dd
+
+Dd is a debug function that prints the values and exits the program.
+
+_Example: dump and exit_
+
+```go
+v := map[string]int{"a": 1}
+godump.Dd(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+_Example: dump and exit with a custom dumper_
+
+```go
+d := godump.NewDumper()
+v := map[string]int{"a": 1}
+d.Dd(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+### <a id="dump"></a>Dump
+
+Dump prints the values to stdout with colorized output.
+
+_Example: print to stdout_
+
+```go
+v := map[string]int{"a": 1}
+godump.Dump(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+_Example: print with a custom dumper_
+
+```go
+d := godump.NewDumper()
+v := map[string]int{"a": 1}
+d.Dump(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+### <a id="dumpstr"></a>DumpStr
+
+DumpStr returns a string representation of the values with colorized output.
+
+_Example: get a string dump_
+
+```go
+v := map[string]int{"a": 1}
+out := godump.DumpStr(v)
+godump.Dump(out)
+// "#map[string]int {\n  a => 1 #int\n}" #string
+```
+
+_Example: get a string dump with a custom dumper_
+
+```go
+d := godump.NewDumper()
+v := map[string]int{"a": 1}
+out := d.DumpStr(v)
+_ = out
+// "#map[string]int {\n  a => 1 #int\n}" #string
+```
+
+### <a id="fdump"></a>Fdump
+
+Fdump writes the formatted dump of values to the given io.Writer.
+
+```go
+var b strings.Builder
+v := map[string]int{"a": 1}
+godump.Fdump(&b, v)
+// outputs to strings builder
+```
+
+## HTML
+
+### <a id="dumphtml"></a>DumpHTML
+
+DumpHTML dumps the values as HTML with colorized output.
+
+_Example: dump HTML_
+
+```go
+v := map[string]int{"a": 1}
+html := godump.DumpHTML(v)
+_ = html
+// (html output)
+```
+
+_Example: dump HTML with a custom dumper_
+
+```go
+d := godump.NewDumper()
+v := map[string]int{"a": 1}
+html := d.DumpHTML(v)
+_ = html
+fmt.Println(html)
+// (html output)
+```
+
+## JSON
+
+### <a id="dumpjson"></a>DumpJSON
+
+DumpJSON prints a pretty-printed JSON string to the configured writer.
+
+_Example: print JSON_
+
+```go
+v := map[string]int{"a": 1}
+d := godump.NewDumper()
+d.DumpJSON(v)
+// {
+//   "a": 1
+// }
+```
+
+_Example: print JSON_
+
+```go
+v := map[string]int{"a": 1}
+godump.DumpJSON(v)
+// {
+//   "a": 1
+// }
+```
+
+### <a id="dumpjsonstr"></a>DumpJSONStr
+
+DumpJSONStr pretty-prints values as JSON and returns it as a string.
+
+_Example: dump JSON string_
+
+```go
+v := map[string]int{"a": 1}
+d := godump.NewDumper()
+out := d.DumpJSONStr(v)
+_ = out
+// {"a":1}
+```
+
+_Example: JSON string_
+
+```go
+v := map[string]int{"a": 1}
+out := godump.DumpJSONStr(v)
+_ = out
+// {"a":1}
+```
+
+## Options
+
+### <a id="withdisablestringer"></a>WithDisableStringer
+
+WithDisableStringer disables using the fmt.Stringer output.
+When enabled, the underlying type is rendered instead of String().
+
+```go
+// Default: false
+v := time.Duration(3)
+d := godump.NewDumper(godump.WithDisableStringer(true))
+d.Dump(v)
+// 3 #time.Duration
+```
+
+### <a id="withmaxdepth"></a>WithMaxDepth
+
+WithMaxDepth limits how deep the structure will be dumped.
+Param n must be 0 or greater or this will be ignored, and default MaxDepth will be 15.
+
+```go
+// Default: 15
+v := map[string]map[string]int{"a": {"b": 1}}
+d := godump.NewDumper(godump.WithMaxDepth(1))
+d.Dump(v)
+// #map[string]int {
+//   a => #map[string]int {
+//     b => ... (max depth)
+//   }
+// }
+```
+
+### <a id="withmaxitems"></a>WithMaxItems
+
+WithMaxItems limits how many items from an array, slice, or map can be printed.
+Param n must be 0 or greater or this will be ignored, and default MaxItems will be 100.
+
+```go
+// Default: 100
+v := []int{1, 2, 3}
+d := godump.NewDumper(godump.WithMaxItems(2))
+d.Dump(v)
+// #[]int [
+//   0 => 1 #int
+//   1 => 2 #int
+//   ... (truncated)
+// ]
+```
+
+### <a id="withmaxstringlen"></a>WithMaxStringLen
+
+WithMaxStringLen limits how long printed strings can be.
+Param n must be 0 or greater or this will be ignored, and default MaxStringLen will be 100000.
+
+```go
+// Default: 100000
+v := "hello world"
+d := godump.NewDumper(godump.WithMaxStringLen(5))
+d.Dump(v)
+// "hello…" #string
+```
+
+### <a id="withskipstackframes"></a>WithSkipStackFrames
+
+WithSkipStackFrames skips additional stack frames for header reporting.
+This is useful when godump is wrapped and the actual call site is deeper.
+
+```go
+// Default: 0
+v := map[string]int{"a": 1}
+d := godump.NewDumper(godump.WithSkipStackFrames(2))
+d.Dump(v)
+// <#dump // ../../../../usr/local/go/src/runtime/asm_arm64.s:1223
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+### <a id="withwriter"></a>WithWriter
+
+WithWriter routes output to the provided writer.
+
+```go
+// Default: stdout
+var b strings.Builder
+v := map[string]int{"a": 1}
+d := godump.NewDumper(godump.WithWriter(&b))
+d.Dump(v)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+
+### <a id="withoutcolor"></a>WithoutColor
+
+WithoutColor disables colorized output for the dumper.
+
+```go
+// Default: false
+v := map[string]int{"a": 1}
+d := godump.NewDumper(godump.WithoutColor())
+d.Dump(v)
+// (prints without color)
+// #map[string]int {
+//   a => 1 #int
+// }
+```
+<!-- api:embed:end -->

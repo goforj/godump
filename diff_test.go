@@ -98,14 +98,14 @@ func TestDiffHTML(t *testing.T) {
 }
 
 func TestDiffStrNoColor(t *testing.T) {
-	out := NewDumper(WithNoColor()).DiffStr("a", "b")
+	out := NewDumper(WithoutColor()).DiffStr("a", "b")
 	assert.NotContains(t, out, string(ansiEscape))
 	assert.Contains(t, out, `- "a" #string`)
 	assert.Contains(t, out, `+ "b" #string`)
 }
 
 func TestDiffHTMLNoColor(t *testing.T) {
-	out := NewDumper(WithNoColor()).DiffHTML("a", "b")
+	out := NewDumper(WithoutColor()).DiffHTML("a", "b")
 	assert.NotContains(t, out, `<span style="color:`)
 	assert.NotContains(t, out, `<span style="background-color:`)
 	assert.Contains(t, out, `"a"`)
