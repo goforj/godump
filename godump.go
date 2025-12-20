@@ -174,9 +174,9 @@ func newDumpState() *dumpState {
 //	v := map[string]map[string]int{"a": {"b": 1}}
 //	d := godump.NewDumper(godump.WithMaxDepth(1))
 //	d.Dump(v)
-//	// #map[string]int {
+//	// #map[string]map[string]int {
 //	//   a => #map[string]int {
-//	//     b => ... (max depth)
+//	//     b => 1 #int
 //	//   }
 //	// }
 func WithMaxDepth(n int) Option {
@@ -904,12 +904,19 @@ func (d *Dumper) getTypeString(t reflect.Type) string {
 }
 
 func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dumpState) {
-	if indent > d.maxDepth {
-		fmt.Fprint(w, d.colorize(colorGray, "... (max depth)"))
-		return
-	}
 	if !v.IsValid() {
 		fmt.Fprint(w, d.colorize(colorGray, "<invalid>"))
+		return
+	}
+
+	if isNil(v) {
+		typeStr := d.getTypeString(v.Type())
+		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
+		return
+	}
+
+	if shouldTruncateAtDepth(v, indent, d.maxDepth) {
+		fmt.Fprint(w, d.colorize(colorGray, "... (max depth)"))
 		return
 	}
 
@@ -921,18 +928,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 	switch v.Kind() {
 	case reflect.Chan:
 		typ := d.colorizer(colorGray, d.getTypeString(v.Type()))
-
-		if v.IsNil() {
-			fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("#%s(nil)", typ)))
-		} else {
-			fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, typ), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
-		}
-		return
-	}
-
-	if isNil(v) {
-		typeStr := d.getTypeString(v.Type())
-		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
+		fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, typ), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
 		return
 	}
 
@@ -1234,4 +1230,57 @@ func (d *Dumper) redactedValue(v reflect.Value) string {
 	}
 	typeStr := d.getTypeString(v.Type())
 	return d.colorize(colorRed, "<redacted>") + d.colorize(colorGray, " #"+typeStr)
+}
+
+func isComplexValue(v reflect.Value) bool {
+	_, ok := complexBaseKind(v)
+	return ok
+}
+
+func complexBaseKind(v reflect.Value) (reflect.Kind, bool) {
+	if !v.IsValid() {
+		return 0, false
+	}
+
+	for v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return 0, false
+		}
+		v = v.Elem()
+	}
+
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return 0, false
+		}
+		v = v.Elem()
+	}
+
+	switch v.Kind() {
+	case reflect.Struct, reflect.Map, reflect.Slice, reflect.Array:
+		return v.Kind(), true
+	default:
+		return 0, false
+	}
+}
+
+func shouldTruncateAtDepth(v reflect.Value, indent, maxDepth int) bool {
+	if indent > maxDepth && isComplexValue(v) {
+		return true
+	}
+	if indent < maxDepth {
+		return false
+	}
+
+	kind, ok := complexBaseKind(v)
+	if !ok {
+		return false
+	}
+
+	switch kind {
+	case reflect.Map, reflect.Slice, reflect.Array:
+		return true
+	default:
+		return false
+	}
 }

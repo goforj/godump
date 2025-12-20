@@ -14,9 +14,9 @@ func main() {
 	v := map[string]map[string]int{"a": {"b": 1}}
 	d := godump.NewDumper(godump.WithMaxDepth(1))
 	d.Dump(v)
-	// #map[string]int {
+	// #map[string]map[string]int {
 	//   a => #map[string]int {
-	//     b => ... (max depth)
+	//     b => 1 #int
 	//   }
 	// }
 }
