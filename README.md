@@ -11,7 +11,7 @@
     <a href="https://goreportcard.com/report/github.com/goforj/godump"><img src="https://goreportcard.com/badge/github.com/goforj/godump" alt="Go Report Card"></a>
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
 <!-- test-count:embed:start -->
-    <img src="https://img.shields.io/badge/tests-127-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-130-brightgreen" alt="Tests">
 <!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
@@ -236,7 +236,7 @@ If a pointer has already been printed:
 | **Dump** | [Dd](#dd) [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) |
+| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithNoHeader](#withnoheader) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) |
 
 
 ## Builder
@@ -579,6 +579,17 @@ v := "hello world"
 d := godump.NewDumper(godump.WithMaxStringLen(5))
 d.Dump(v)
 // "hello…" #string
+```
+
+### <a id="withnoheader"></a>WithNoHeader
+
+WithNoHeader disables printing the source location header.
+
+```go
+// Default: false
+d := godump.NewDumper(godump.WithNoHeader())
+d.Dump("hello")
+// "hello" #string
 ```
 
 ### <a id="withskipstackframes"></a>WithSkipStackFrames

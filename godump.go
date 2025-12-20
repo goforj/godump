@@ -94,6 +94,7 @@ type Dumper struct {
 	skippedStackFrames int
 	disableStringer    bool
 	disableColor       bool
+	disableHeader      bool
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -266,6 +267,22 @@ func WithoutColor() Option {
 	return func(d *Dumper) *Dumper {
 		d.disableColor = true
 		d.colorizer = colorizeUnstyled
+		return d
+	}
+}
+
+// WithNoHeader disables printing the source location header.
+// @group Options
+//
+// Example: disable header
+//
+//	// Default: false
+//	d := godump.NewDumper(godump.WithNoHeader())
+//	d.Dump("hello")
+//	// "hello" #string
+func WithNoHeader() Option {
+	return func(d *Dumper) *Dumper {
+		d.disableHeader = true
 		return d
 	}
 }
@@ -553,6 +570,9 @@ func (d *Dumper) ensureColorizer() {
 
 // printDumpHeader prints the header for the dump output, including the file and line number.
 func (d *Dumper) printDumpHeader(out io.Writer) {
+	if d.disableHeader {
+		return
+	}
 	file, line := d.findFirstNonInternalFrame(d.skippedStackFrames)
 	if file == "" {
 		return

@@ -178,6 +178,9 @@ func (d *Dumper) dumpStrNoHeader(vs ...any) string {
 
 // printDiffHeader writes the diff header line when a caller frame is available.
 func (d *Dumper) printDiffHeader(out io.Writer) {
+	if d.disableHeader {
+		return
+	}
 	file, line := d.findFirstNonInternalFrame(d.skippedStackFrames)
 	if file == "" {
 		return

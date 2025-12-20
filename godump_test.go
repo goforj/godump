@@ -220,6 +220,12 @@ func TestDumpStrNoColor(t *testing.T) {
 	assert.Contains(t, out, `"x"`)
 }
 
+func TestDumpStrNoHeader(t *testing.T) {
+	out := newDumperT(t, WithNoHeader()).DumpStr("x")
+	assert.NotContains(t, out, "<#dump")
+	assert.Contains(t, out, `"x"`)
+}
+
 func TestDiffStr(t *testing.T) {
 	type User struct {
 		Name string
