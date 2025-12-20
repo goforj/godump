@@ -114,15 +114,7 @@ func (d *Dumper) DiffStr(a, b any) string {
 //	b := map[string]int{"a": 2}
 //	html := godump.DiffHTML(a, b)
 //	_ = html
-//	// <div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">
-//	// <span style="color:#999"><#diff // path:line</span>
-//	// <span style="background-color:#221010; display:block; width:100%;">- <span style="color:#999">#map[string]int</span> {</span>
-//	// <span style="background-color:#221010; display:block; width:100%;">-   <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">1</span><span style="color:#999"> #int</span></span>
-//	// <span style="background-color:#221010; display:block; width:100%;">- }</span>
-//	// <span style="background-color:#102216; display:block; width:100%;">+ <span style="color:#999">#map[string]int</span> {</span>
-//	// <span style="background-color:#102216; display:block; width:100%;">+   <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">2</span><span style="color:#999"> #int</span></span>
-//	// <span style="background-color:#102216; display:block; width:100%;">+ }</span>
-//	// </pre></div>
+//	// (html diff)
 func DiffHTML(a, b any) string {
 	return defaultDumper.DiffHTML(a, b)
 }
@@ -137,15 +129,7 @@ func DiffHTML(a, b any) string {
 //	b := map[string]int{"a": 2}
 //	html := d.DiffHTML(a, b)
 //	_ = html
-//	// <div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">
-//	// <span style="color:#999"><#diff // path:line</span>
-//	// <span style="background-color:#221010; display:block; width:100%;">- <span style="color:#999">#map[string]int</span> {</span>
-//	// <span style="background-color:#221010; display:block; width:100%;">-   <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">1</span><span style="color:#999"> #int</span></span>
-//	// <span style="background-color:#221010; display:block; width:100%;">- }</span>
-//	// <span style="background-color:#102216; display:block; width:100%;">+ <span style="color:#999">#map[string]int</span> {</span>
-//	// <span style="background-color:#102216; display:block; width:100%;">+   <span style="color:#d087d0">a</span> => <span style="color:#40c0ff">2</span><span style="color:#999"> #int</span></span>
-//	// <span style="background-color:#102216; display:block; width:100%;">+ }</span>
-//	// </pre></div>
+//	// (html diff)
 func (d *Dumper) DiffHTML(a, b any) string {
 	var sb strings.Builder
 	sb.WriteString(`<div style='background-color:black;'><pre style="background-color:black; color:white; padding:5px; border-radius: 5px">` + "\n")
