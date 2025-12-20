@@ -86,6 +86,8 @@ linters:
             - 40
         - name: empty-lines
           disabled: true
+        - name: line-length-limit
+          disabled: true
         - name: max-control-nesting
           arguments:
             # lower=better
