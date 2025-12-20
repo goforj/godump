@@ -271,16 +271,16 @@ func WithoutColor() Option {
 	}
 }
 
-// WithNoHeader disables printing the source location header.
+// WithoutHeader disables printing the source location header.
 // @group Options
 //
 // Example: disable header
 //
 //	// Default: false
-//	d := godump.NewDumper(godump.WithNoHeader())
+//	d := godump.NewDumper(godump.WithoutHeader())
 //	d.Dump("hello")
 //	// "hello" #string
-func WithNoHeader() Option {
+func WithoutHeader() Option {
 	return func(d *Dumper) *Dumper {
 		d.disableHeader = true
 		return d

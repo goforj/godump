@@ -221,7 +221,7 @@ func TestDumpStrNoColor(t *testing.T) {
 }
 
 func TestDumpStrNoHeader(t *testing.T) {
-	out := newDumperT(t, WithNoHeader()).DumpStr("x")
+	out := newDumperT(t, WithoutHeader()).DumpStr("x")
 	assert.NotContains(t, out, "<#dump")
 	assert.Contains(t, out, `"x"`)
 }

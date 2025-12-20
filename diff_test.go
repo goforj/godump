@@ -105,7 +105,7 @@ func TestDiffStrNoColor(t *testing.T) {
 }
 
 func TestDiffStrNoHeader(t *testing.T) {
-	d := NewDumper(WithNoHeader())
+	d := NewDumper(WithoutHeader())
 	d.colorizer = colorizeUnstyled
 	out := d.DiffStr(1, 2)
 	out = stripANSI(out)

@@ -236,7 +236,7 @@ If a pointer has already been printed:
 | **Dump** | [Dd](#dd) [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithNoHeader](#withnoheader) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) |
+| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithoutHeader](#withoutheader) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) |
 
 
 ## Builder
@@ -581,13 +581,13 @@ d.Dump(v)
 // "hello…" #string
 ```
 
-### <a id="withnoheader"></a>WithNoHeader
+### <a id="withoutheader"></a>WithoutHeader
 
-WithNoHeader disables printing the source location header.
+WithoutHeader disables printing the source location header.
 
 ```go
 // Default: false
-d := godump.NewDumper(godump.WithNoHeader())
+d := godump.NewDumper(godump.WithoutHeader())
 d.Dump("hello")
 // "hello" #string
 ```
