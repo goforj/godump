@@ -41,6 +41,44 @@ const (
 	initialCallerSkip      = 2
 )
 
+const (
+	// FieldMatchExact matches field names exactly (case-insensitive).
+	FieldMatchExact FieldMatchMode = iota
+	// FieldMatchContains matches if the field name contains a substring (case-insensitive).
+	FieldMatchContains
+	// FieldMatchPrefix matches if the field name starts with a substring (case-insensitive).
+	FieldMatchPrefix
+	// FieldMatchSuffix matches if the field name ends with a substring (case-insensitive).
+	FieldMatchSuffix
+)
+
+// FieldMatchMode controls how field names are matched.
+type FieldMatchMode int
+
+var defaultRedactedFields = []string{
+	"password",
+	"passwd",
+	"pwd",
+	"secret",
+	"token",
+	"api_key",
+	"apikey",
+	"access_key",
+	"accesskey",
+	"private_key",
+	"privatekey",
+	"client_secret",
+	"clientsecret",
+	"refresh_token",
+	"session",
+	"cookie",
+	"jwt",
+	"bearer",
+	"authorization",
+	"signature",
+	"signing_key",
+}
+
 // defaultDumper is the default Dumper instance used by Dump and DumpStr functions.
 var defaultDumper = NewDumper()
 
@@ -95,6 +133,11 @@ type Dumper struct {
 	disableStringer    bool
 	disableColor       bool
 	disableHeader      bool
+	includeFields      []string
+	excludeFields      []string
+	redactFields       []string
+	fieldMatchMode     FieldMatchMode
+	redactMatchMode    FieldMatchMode
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -287,6 +330,157 @@ func WithoutHeader() Option {
 	}
 }
 
+// WithOnlyFields limits struct output to fields that match the provided names.
+// @group Options
+//
+// Example: include-only fields
+//
+//	// Default: none
+//	type User struct {
+//		ID       int
+//		Email    string
+//		Password string
+//	}
+//	d := godump.NewDumper(
+//		godump.WithOnlyFields("ID", "Email"),
+//	)
+//	d.Dump(User{ID: 1, Email: "user@example.com", Password: "secret"})
+//	// #godump.User {
+//	//   +ID    => 1 #int
+//	//   +Email => "user@example.com" #string
+//	// }
+func WithOnlyFields(names ...string) Option {
+	return func(d *Dumper) *Dumper {
+		d.includeFields = append(d.includeFields, names...)
+		return d
+	}
+}
+
+// WithExcludeFields omits struct fields that match the provided names.
+// @group Options
+//
+// Example: exclude fields
+//
+//	// Default: none
+//	type User struct {
+//		ID       int
+//		Email    string
+//		Password string
+//	}
+//	d := godump.NewDumper(
+//		godump.WithExcludeFields("Password"),
+//	)
+//	d.Dump(User{ID: 1, Email: "user@example.com", Password: "secret"})
+//	// #godump.User {
+//	//   +ID    => 1 #int
+//	//   +Email => "user@example.com" #string
+//	// }
+func WithExcludeFields(names ...string) Option {
+	return func(d *Dumper) *Dumper {
+		d.excludeFields = append(d.excludeFields, names...)
+		return d
+	}
+}
+
+// WithFieldMatchMode sets how field names are matched for WithOnlyFields/WithExcludeFields.
+// @group Options
+//
+// Example: use substring matching
+//
+//	// Default: FieldMatchExact
+//	type User struct {
+//		UserID int
+//	}
+//	d := godump.NewDumper(
+//		godump.WithOnlyFields("id"),
+//		godump.WithFieldMatchMode(godump.FieldMatchContains),
+//	)
+//	d.Dump(User{UserID: 10})
+//	// #godump.User {
+//	//   +UserID => 10 #int
+//	// }
+func WithFieldMatchMode(mode FieldMatchMode) Option {
+	return func(d *Dumper) *Dumper {
+		d.fieldMatchMode = mode
+		return d
+	}
+}
+
+// WithRedactFields replaces matching struct fields with a redacted placeholder.
+// @group Options
+//
+// Example: redact fields
+//
+//	// Default: none
+//	type User struct {
+//		ID       int
+//		Password string
+//	}
+//	d := godump.NewDumper(
+//		godump.WithRedactFields("Password"),
+//	)
+//	d.Dump(User{ID: 1, Password: "secret"})
+//	// #godump.User {
+//	//   +ID       => 1 #int
+//	//   +Password => <redacted> #string
+//	// }
+func WithRedactFields(names ...string) Option {
+	return func(d *Dumper) *Dumper {
+		d.redactFields = append(d.redactFields, names...)
+		return d
+	}
+}
+
+// WithRedactSensitive enables default redaction for common sensitive fields.
+// @group Options
+//
+// Example: redact common sensitive fields
+//
+//	// Default: disabled
+//	type User struct {
+//		Password string
+//		Token    string
+//	}
+//	d := godump.NewDumper(
+//		godump.WithRedactSensitive(),
+//	)
+//	d.Dump(User{Password: "secret", Token: "abc"})
+//	// #godump.User {
+//	//   +Password => <redacted> #string
+//	//   +Token    => <redacted> #string
+//	// }
+func WithRedactSensitive() Option {
+	return func(d *Dumper) *Dumper {
+		d.redactFields = append(d.redactFields, defaultRedactedFields...)
+		d.redactMatchMode = FieldMatchContains
+		return d
+	}
+}
+
+// WithRedactMatchMode sets how field names are matched for WithRedactFields.
+// @group Options
+//
+// Example: use substring matching
+//
+//	// Default: FieldMatchExact
+//	type User struct {
+//		APIKey string
+//	}
+//	d := godump.NewDumper(
+//		godump.WithRedactFields("key"),
+//		godump.WithRedactMatchMode(godump.FieldMatchContains),
+//	)
+//	d.Dump(User{APIKey: "abc"})
+//	// #godump.User {
+//	//   +APIKey => <redacted> #string
+//	// }
+func WithRedactMatchMode(mode FieldMatchMode) Option {
+	return func(d *Dumper) *Dumper {
+		d.redactMatchMode = mode
+		return d
+	}
+}
+
 // NewDumper creates a new Dumper with the given options applied.
 // Defaults are used for any setting not overridden.
 // @group Builder
@@ -311,6 +505,8 @@ func NewDumper(opts ...Option) *Dumper {
 		writer:          os.Stdout,
 		colorizer:       nil, // ensure no detection is made if we don't need it
 		callerFn:        runtime.Caller,
+		fieldMatchMode:  FieldMatchExact,
+		redactMatchMode: FieldMatchExact,
 	}
 	for _, opt := range opts {
 		d = opt(d)
@@ -773,6 +969,9 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 		for i := 0; i < t.NumField(); i++ {
 			field := t.Field(i)
 			fieldVal := v.Field(i)
+			if !d.shouldIncludeField(field.Name) {
+				continue
+			}
 
 			symbol := "+"
 			if field.PkgPath != "" {
@@ -781,8 +980,8 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 			}
 			indentPrint(w, indent+1, d.colorize(colorYellow, symbol)+field.Name)
 			fmt.Fprint(w, "	=> ")
-			if s := d.asStringer(fieldVal); s != "" {
-				fmt.Fprint(w, s)
+			if d.shouldRedactField(field.Name) {
+				fmt.Fprint(w, d.redactedValue(fieldVal))
 			} else {
 				d.printValue(w, fieldVal, indent+1, state)
 			}
@@ -985,4 +1184,58 @@ func contains(candidates []reflect.Kind, target reflect.Kind) bool {
 	}
 
 	return false
+}
+
+func (d *Dumper) shouldIncludeField(name string) bool {
+	if len(d.includeFields) == 0 {
+		return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
+	}
+	if d.matchesAny(name, d.includeFields, d.fieldMatchMode) {
+		return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
+	}
+	return false
+}
+
+func (d *Dumper) shouldRedactField(name string) bool {
+	return d.matchesAny(name, d.redactFields, d.redactMatchMode)
+}
+
+func (d *Dumper) matchesAny(name string, candidates []string, mode FieldMatchMode) bool {
+	if len(candidates) == 0 {
+		return false
+	}
+	nameLower := strings.ToLower(name)
+	for _, candidate := range candidates {
+		if candidate == "" {
+			continue
+		}
+		candidateLower := strings.ToLower(candidate)
+		switch mode {
+		case FieldMatchContains:
+			if strings.Contains(nameLower, candidateLower) {
+				return true
+			}
+		case FieldMatchPrefix:
+			if strings.HasPrefix(nameLower, candidateLower) {
+				return true
+			}
+		case FieldMatchSuffix:
+			if strings.HasSuffix(nameLower, candidateLower) {
+				return true
+			}
+		default:
+			if strings.EqualFold(name, candidate) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (d *Dumper) redactedValue(v reflect.Value) string {
+	if !v.IsValid() {
+		return d.colorize(colorRed, "<redacted>")
+	}
+	typeStr := d.getTypeString(v.Type())
+	return d.colorize(colorRed, "<redacted>") + d.colorize(colorGray, " #"+typeStr)
 }
