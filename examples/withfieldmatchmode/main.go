@@ -6,7 +6,7 @@ package main
 import "github.com/goforj/godump"
 
 func main() {
-	// WithFieldMatchMode sets how field names are matched for WithOnlyFields/WithExcludeFields.
+	// WithFieldMatchMode sets how field names are matched for WithExcludeFields.
 
 	// Example: use substring matching
 	// Default: FieldMatchExact
@@ -14,11 +14,10 @@ func main() {
 		UserID int
 	}
 	d := godump.NewDumper(
-		godump.WithOnlyFields("id"),
+		godump.WithExcludeFields("id"),
 		godump.WithFieldMatchMode(godump.FieldMatchContains),
 	)
 	d.Dump(User{UserID: 10})
 	// #godump.User {
-	//   +UserID => 10 #int
 	// }
 }

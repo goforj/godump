@@ -382,7 +382,7 @@ func WithExcludeFields(names ...string) Option {
 	}
 }
 
-// WithFieldMatchMode sets how field names are matched for WithOnlyFields/WithExcludeFields.
+// WithFieldMatchMode sets how field names are matched for WithExcludeFields.
 // @group Options
 //
 // Example: use substring matching
@@ -392,12 +392,11 @@ func WithExcludeFields(names ...string) Option {
 //		UserID int
 //	}
 //	d := godump.NewDumper(
-//		godump.WithOnlyFields("id"),
+//		godump.WithExcludeFields("id"),
 //		godump.WithFieldMatchMode(godump.FieldMatchContains),
 //	)
 //	d.Dump(User{UserID: 10})
 //	// #godump.User {
-//	//   +UserID => 10 #int
 //	// }
 func WithFieldMatchMode(mode FieldMatchMode) Option {
 	return func(d *Dumper) *Dumper {
@@ -1187,13 +1186,7 @@ func contains(candidates []reflect.Kind, target reflect.Kind) bool {
 }
 
 func (d *Dumper) shouldIncludeField(name string) bool {
-	if len(d.includeFields) == 0 {
-		return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
-	}
-	if d.matchesAny(name, d.includeFields, d.fieldMatchMode) {
-		return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
-	}
-	return false
+	return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
 }
 
 func (d *Dumper) shouldRedactField(name string) bool {

@@ -1202,21 +1202,14 @@ func TestDisableStringer(t *testing.T) {
 
 func TestFieldFiltersExact(t *testing.T) {
 	type User struct {
-		ID       int
+		UserID   int
 		Email    string
 		Password string
 	}
 
-	d := newDumperT(t, WithOnlyFields("ID", "Email"))
-	out := d.DumpStr(User{ID: 1, Email: "user@example.com", Password: "secret"})
-	assert.Contains(t, out, "+ID")
-	assert.Contains(t, out, "user@example.com")
-	assert.NotContains(t, out, "Password")
-	assert.NotContains(t, out, "secret")
-
-	d = newDumperT(t, WithExcludeFields("Password"))
-	out = d.DumpStr(User{ID: 1, Email: "user@example.com", Password: "secret"})
-	assert.Contains(t, out, "+ID")
+	d := newDumperT(t, WithExcludeFields("Password"))
+	out := d.DumpStr(User{UserID: 10, Email: "user@example.com", Password: "secret"})
+	assert.Contains(t, out, "+UserID")
 	assert.Contains(t, out, "user@example.com")
 	assert.NotContains(t, out, "Password")
 	assert.NotContains(t, out, "secret")
@@ -1224,18 +1217,12 @@ func TestFieldFiltersExact(t *testing.T) {
 
 func TestFieldFiltersMatchModes(t *testing.T) {
 	type User struct {
-		UserID   int
-		Email    string
-		Password string
+		UserID int
+		Email  string
 	}
 
-	d := newDumperT(t, WithOnlyFields("id"), WithFieldMatchMode(FieldMatchContains))
-	out := d.DumpStr(User{UserID: 10, Email: "user@example.com", Password: "secret"})
-	assert.Contains(t, out, "+UserID")
-	assert.NotContains(t, out, "+Email")
-
-	d = newDumperT(t, WithExcludeFields("user"), WithFieldMatchMode(FieldMatchPrefix))
-	out = d.DumpStr(User{UserID: 10, Email: "user@example.com"})
+	d := newDumperT(t, WithExcludeFields("user"), WithFieldMatchMode(FieldMatchPrefix))
+	out := d.DumpStr(User{UserID: 10, Email: "user@example.com"})
 	assert.NotContains(t, out, "+UserID")
 	assert.Contains(t, out, "+Email")
 }

@@ -557,7 +557,7 @@ d.Dump(User{ID: 1, Email: "user@example.com", Password: "secret"})
 
 ### <a id="withfieldmatchmode"></a>WithFieldMatchMode
 
-WithFieldMatchMode sets how field names are matched for WithOnlyFields/WithExcludeFields.
+WithFieldMatchMode sets how field names are matched for WithExcludeFields.
 
 ```go
 // Default: FieldMatchExact
@@ -565,12 +565,11 @@ type User struct {
 	UserID int
 }
 d := godump.NewDumper(
-	godump.WithOnlyFields("id"),
+	godump.WithExcludeFields("id"),
 	godump.WithFieldMatchMode(godump.FieldMatchContains),
 )
 d.Dump(User{UserID: 10})
 // #godump.User {
-//   +UserID => 10 #int
 // }
 ```
 
