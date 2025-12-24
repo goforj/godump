@@ -104,6 +104,16 @@ func TestDiffStrNoColor(t *testing.T) {
 	assert.Contains(t, out, `+ "b" #string`)
 }
 
+func TestDiffStrNoHeader(t *testing.T) {
+	d := NewDumper(WithoutHeader())
+	d.colorizer = colorizeUnstyled
+	out := d.DiffStr(1, 2)
+	out = stripANSI(out)
+	assert.NotContains(t, out, "<#diff")
+	assert.Contains(t, out, "- 1")
+	assert.Contains(t, out, "+ 2")
+}
+
 func TestDiffHTMLNoColor(t *testing.T) {
 	out := NewDumper(WithoutColor()).DiffHTML("a", "b")
 	assert.NotContains(t, out, `<span style="color:`)
