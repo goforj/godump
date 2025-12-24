@@ -1200,6 +1200,112 @@ func TestDisableStringer(t *testing.T) {
 	assert.Contains(t, v, `-secret => 👻 hidden stringer`)
 }
 
+func TestOnlyFields(t *testing.T) {
+	type User struct {
+		ID       int
+		Email    string
+		Password string
+	}
+
+	d := newDumperT(t, WithOnlyFields("ID", "Email"))
+	out := d.DumpStr(User{ID: 10, Email: "user@example.com", Password: "secret"})
+	assert.Contains(t, out, "+ID")
+	assert.Contains(t, out, "+Email")
+	assert.Contains(t, out, "user@example.com")
+	assert.NotContains(t, out, "Password")
+	assert.NotContains(t, out, "secret")
+}
+
+func TestFieldFiltersExact(t *testing.T) {
+	type User struct {
+		UserID   int
+		Email    string
+		Password string
+	}
+
+	d := newDumperT(t, WithExcludeFields("Password"))
+	out := d.DumpStr(User{UserID: 10, Email: "user@example.com", Password: "secret"})
+	assert.Contains(t, out, "+UserID")
+	assert.Contains(t, out, "user@example.com")
+	assert.NotContains(t, out, "Password")
+	assert.NotContains(t, out, "secret")
+}
+
+func TestFieldFiltersMatchModes(t *testing.T) {
+	type User struct {
+		UserID int
+		Email  string
+	}
+
+	d := newDumperT(t, WithExcludeFields("user"), WithFieldMatchMode(FieldMatchPrefix))
+	out := d.DumpStr(User{UserID: 10, Email: "user@example.com"})
+	assert.NotContains(t, out, "+UserID")
+	assert.Contains(t, out, "+Email")
+}
+
+func TestRedactFields(t *testing.T) {
+	type User struct {
+		ID       int
+		Password string
+	}
+
+	d := newDumperT(t, WithRedactFields("Password"))
+	out := d.DumpStr(User{ID: 1, Password: "secret"})
+	assert.Contains(t, out, "+Password => <redacted> #string")
+	assert.NotContains(t, out, "secret")
+}
+
+func TestRedactSensitiveDefaults(t *testing.T) {
+	type User struct {
+		Password   string
+		AuthToken  string
+		SessionKey string
+	}
+
+	d := newDumperT(t, WithRedactSensitive())
+	out := d.DumpStr(User{Password: "secret", AuthToken: "tok", SessionKey: "key"})
+	assert.Contains(t, out, "Password")
+	assert.Contains(t, out, "<redacted> #string")
+	assert.Contains(t, out, "AuthToken")
+	assert.Contains(t, out, "SessionKey")
+	assert.NotContains(t, out, "secret")
+	assert.NotContains(t, out, "tok")
+	assert.NotContains(t, out, "key")
+}
+
+func TestRedactMatchMode(t *testing.T) {
+	type User struct {
+		APIKey string
+		Email  string
+	}
+
+	d := newDumperT(t, WithRedactFields("key"), WithRedactMatchMode(FieldMatchContains))
+	out := d.DumpStr(User{APIKey: "abc", Email: "user@example.com"})
+	assert.Contains(t, out, "+APIKey => <redacted> #string")
+	assert.Contains(t, out, "+Email")
+	assert.NotContains(t, out, "abc")
+}
+
+func TestRedactMatchSuffixAndEmptyCandidate(t *testing.T) {
+	type User struct {
+		APIKey string
+		Email  string
+	}
+
+	d := newDumperT(t,
+		WithRedactFields("Key", ""),
+		WithRedactMatchMode(FieldMatchSuffix),
+	)
+	out := d.DumpStr(User{APIKey: "abc", Email: "user@example.com"})
+	assert.Contains(t, out, "+APIKey")
+	assert.Contains(t, out, "<redacted> #string")
+	assert.Contains(t, out, "+Email")
+	assert.NotContains(t, out, "abc")
+
+	placeholder := d.redactedValue(reflect.Value{})
+	assert.Contains(t, placeholder, "<redacted>")
+}
+
 func TestRecursivePtr(t *testing.T) {
 	s := "string"
 	a := &s

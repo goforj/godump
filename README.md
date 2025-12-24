@@ -11,7 +11,7 @@
     <a href="https://goreportcard.com/report/github.com/goforj/godump"><img src="https://goreportcard.com/badge/github.com/goforj/godump" alt="Go Report Card"></a>
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
 <!-- test-count:embed:start -->
-    <img src="https://img.shields.io/badge/tests-130-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-143-brightgreen" alt="Tests">
 <!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
@@ -236,7 +236,7 @@ If a pointer has already been printed:
 | **Dump** | [Dd](#dd) [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithoutHeader](#withoutheader) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) |
+| **Options** | [WithDisableStringer](#withdisablestringer) [WithExcludeFields](#withexcludefields) [WithFieldMatchMode](#withfieldmatchmode) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithOnlyFields](#withonlyfields) [WithRedactFields](#withredactfields) [WithRedactMatchMode](#withredactmatchmode) [WithRedactSensitive](#withredactsensitive) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) [WithoutHeader](#withoutheader) |
 
 
 ## Builder
@@ -534,6 +534,45 @@ d.Dump(v)
 // 3 #time.Duration
 ```
 
+### <a id="withexcludefields"></a>WithExcludeFields
+
+WithExcludeFields omits struct fields that match the provided names.
+
+```go
+// Default: none
+type User struct {
+	ID       int
+	Email    string
+	Password string
+}
+d := godump.NewDumper(
+	godump.WithExcludeFields("Password"),
+)
+d.Dump(User{ID: 1, Email: "user@example.com", Password: "secret"})
+// #godump.User {
+//   +ID    => 1 #int
+//   +Email => "user@example.com" #string
+// }
+```
+
+### <a id="withfieldmatchmode"></a>WithFieldMatchMode
+
+WithFieldMatchMode sets how field names are matched for WithExcludeFields.
+
+```go
+// Default: FieldMatchExact
+type User struct {
+	UserID int
+}
+d := godump.NewDumper(
+	godump.WithExcludeFields("id"),
+	godump.WithFieldMatchMode(godump.FieldMatchContains),
+)
+d.Dump(User{UserID: 10})
+// #godump.User {
+// }
+```
+
 ### <a id="withmaxdepth"></a>WithMaxDepth
 
 WithMaxDepth limits how deep the structure will be dumped.
@@ -581,15 +620,84 @@ d.Dump(v)
 // "hello…" #string
 ```
 
-### <a id="withoutheader"></a>WithoutHeader
+### <a id="withonlyfields"></a>WithOnlyFields
 
-WithoutHeader disables printing the source location header.
+WithOnlyFields limits struct output to fields that match the provided names.
 
 ```go
-// Default: false
-d := godump.NewDumper(godump.WithoutHeader())
-d.Dump("hello")
-// "hello" #string
+// Default: none
+type User struct {
+	ID       int
+	Email    string
+	Password string
+}
+d := godump.NewDumper(
+	godump.WithOnlyFields("ID", "Email"),
+)
+d.Dump(User{ID: 1, Email: "user@example.com", Password: "secret"})
+// #godump.User {
+//   +ID    => 1 #int
+//   +Email => "user@example.com" #string
+// }
+```
+
+### <a id="withredactfields"></a>WithRedactFields
+
+WithRedactFields replaces matching struct fields with a redacted placeholder.
+
+```go
+// Default: none
+type User struct {
+	ID       int
+	Password string
+}
+d := godump.NewDumper(
+	godump.WithRedactFields("Password"),
+)
+d.Dump(User{ID: 1, Password: "secret"})
+// #godump.User {
+//   +ID       => 1 #int
+//   +Password => <redacted> #string
+// }
+```
+
+### <a id="withredactmatchmode"></a>WithRedactMatchMode
+
+WithRedactMatchMode sets how field names are matched for WithRedactFields.
+
+```go
+// Default: FieldMatchExact
+type User struct {
+	APIKey string
+}
+d := godump.NewDumper(
+	godump.WithRedactFields("key"),
+	godump.WithRedactMatchMode(godump.FieldMatchContains),
+)
+d.Dump(User{APIKey: "abc"})
+// #godump.User {
+//   +APIKey => <redacted> #string
+// }
+```
+
+### <a id="withredactsensitive"></a>WithRedactSensitive
+
+WithRedactSensitive enables default redaction for common sensitive fields.
+
+```go
+// Default: disabled
+type User struct {
+	Password string
+	Token    string
+}
+d := godump.NewDumper(
+	godump.WithRedactSensitive(),
+)
+d.Dump(User{Password: "secret", Token: "abc"})
+// #godump.User {
+//   +Password => <redacted> #string
+//   +Token    => <redacted> #string
+// }
 ```
 
 ### <a id="withskipstackframes"></a>WithSkipStackFrames
@@ -636,5 +744,16 @@ d.Dump(v)
 // #map[string]int {
 //   a => 1 #int
 // }
+```
+
+### <a id="withoutheader"></a>WithoutHeader
+
+WithoutHeader disables printing the source location header.
+
+```go
+// Default: false
+d := godump.NewDumper(godump.WithoutHeader())
+d.Dump("hello")
+// "hello" #string
 ```
 <!-- api:embed:end -->
