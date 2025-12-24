@@ -1249,25 +1249,26 @@ func complexBaseKind(v reflect.Value) (reflect.Kind, bool) {
 		return 0, false
 	}
 
-	for v.Kind() == reflect.Interface {
-		if v.IsNil() {
-			return 0, false
+	for {
+		switch v.Kind() {
+		case reflect.Interface:
+			if v.IsNil() {
+				return 0, false
+			}
+			v = v.Elem()
+		case reflect.Ptr:
+			if v.IsNil() {
+				return 0, false
+			}
+			v = v.Elem()
+		default:
+			switch v.Kind() {
+			case reflect.Struct, reflect.Map, reflect.Slice, reflect.Array:
+				return v.Kind(), true
+			default:
+				return 0, false
+			}
 		}
-		v = v.Elem()
-	}
-
-	for v.Kind() == reflect.Ptr {
-		if v.IsNil() {
-			return 0, false
-		}
-		v = v.Elem()
-	}
-
-	switch v.Kind() {
-	case reflect.Struct, reflect.Map, reflect.Slice, reflect.Array:
-		return v.Kind(), true
-	default:
-		return 0, false
 	}
 }
 
