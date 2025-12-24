@@ -174,9 +174,9 @@ func newDumpState() *dumpState {
 //	v := map[string]map[string]int{"a": {"b": 1}}
 //	d := godump.NewDumper(godump.WithMaxDepth(1))
 //	d.Dump(v)
-//	// #map[string]int {
+//	// #map[string]map[string]int {
 //	//   a => #map[string]int {
-//	//     b => ... (max depth)
+//	//     b => 1 #int
 //	//   }
 //	// }
 func WithMaxDepth(n int) Option {
@@ -904,12 +904,19 @@ func (d *Dumper) getTypeString(t reflect.Type) string {
 }
 
 func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dumpState) {
-	if indent > d.maxDepth {
-		fmt.Fprint(w, d.colorize(colorGray, "... (max depth)"))
-		return
-	}
 	if !v.IsValid() {
 		fmt.Fprint(w, d.colorize(colorGray, "<invalid>"))
+		return
+	}
+
+	if isNil(v) {
+		typeStr := d.getTypeString(v.Type())
+		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
+		return
+	}
+
+	if shouldTruncateAtDepth(v, indent, d.maxDepth) {
+		fmt.Fprint(w, d.colorize(colorGray, "... (max depth)"))
 		return
 	}
 
@@ -921,18 +928,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 	switch v.Kind() {
 	case reflect.Chan:
 		typ := d.colorizer(colorGray, d.getTypeString(v.Type()))
-
-		if v.IsNil() {
-			fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("#%s(nil)", typ)))
-		} else {
-			fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, typ), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
-		}
-		return
-	}
-
-	if isNil(v) {
-		typeStr := d.getTypeString(v.Type())
-		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
+		fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, typ), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
 		return
 	}
 
@@ -1168,6 +1164,7 @@ func detectColor() bool {
 	return true
 }
 
+// newColorizer picks the appropriate colorizer based on environment overrides.
 func newColorizer() Colorizer {
 	if detectColor() {
 		return colorizeANSI
@@ -1175,6 +1172,7 @@ func newColorizer() Colorizer {
 	return colorizeUnstyled
 }
 
+// contains reports whether target exists in the candidates slice.
 func contains(candidates []reflect.Kind, target reflect.Kind) bool {
 	for _, candidate := range candidates {
 		if candidate == target {
@@ -1185,6 +1183,7 @@ func contains(candidates []reflect.Kind, target reflect.Kind) bool {
 	return false
 }
 
+// shouldIncludeField returns true when the field survives include/exclude filtering (include takes precedence).
 func (d *Dumper) shouldIncludeField(name string) bool {
 	if len(d.includeFields) > 0 && !d.matchesAny(name, d.includeFields, FieldMatchExact) {
 		return false
@@ -1192,10 +1191,12 @@ func (d *Dumper) shouldIncludeField(name string) bool {
 	return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
 }
 
+// shouldRedactField reports whether the field should be replaced with the redacted placeholder.
 func (d *Dumper) shouldRedactField(name string) bool {
 	return d.matchesAny(name, d.redactFields, d.redactMatchMode)
 }
 
+// matchesAny checks whether name matches any of the candidates using the provided mode.
 func (d *Dumper) matchesAny(name string, candidates []string, mode FieldMatchMode) bool {
 	if len(candidates) == 0 {
 		return false
@@ -1234,4 +1235,62 @@ func (d *Dumper) redactedValue(v reflect.Value) string {
 	}
 	typeStr := d.getTypeString(v.Type())
 	return d.colorize(colorRed, "<redacted>") + d.colorize(colorGray, " #"+typeStr)
+}
+
+// isComplexValue reports whether v unwraps to a struct/map/slice/array.
+func isComplexValue(v reflect.Value) bool {
+	_, ok := complexBaseKind(v)
+	return ok
+}
+
+// complexBaseKind unwraps interfaces/pointers, rejects nil, and returns the underlying complex kind if present.
+func complexBaseKind(v reflect.Value) (reflect.Kind, bool) {
+	if !v.IsValid() {
+		return 0, false
+	}
+
+	for {
+		switch v.Kind() {
+		case reflect.Interface:
+			if v.IsNil() {
+				return 0, false
+			}
+			v = v.Elem()
+		case reflect.Ptr:
+			if v.IsNil() {
+				return 0, false
+			}
+			v = v.Elem()
+		default:
+			switch v.Kind() {
+			case reflect.Struct, reflect.Map, reflect.Slice, reflect.Array:
+				return v.Kind(), true
+			default:
+				return 0, false
+			}
+		}
+	}
+}
+
+// shouldTruncateAtDepth determines whether we should print a truncation placeholder at this depth for complex values.
+func shouldTruncateAtDepth(v reflect.Value, indent, maxDepth int) bool {
+	if indent < maxDepth {
+		return false
+	}
+
+	kind, ok := complexBaseKind(v)
+	if indent > maxDepth {
+		return ok
+	}
+
+	if !ok {
+		return false
+	}
+
+	switch kind {
+	case reflect.Map, reflect.Slice, reflect.Array:
+		return true
+	default:
+		return false
+	}
 }

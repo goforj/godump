@@ -122,6 +122,260 @@ func TestMaxDepth(t *testing.T) {
 	assert.Contains(t, out, "... (max depth)")
 }
 
+func TestMaxDepthAllowsScalarValues(t *testing.T) {
+	type Inner struct {
+		ID   int
+		Name string
+	}
+	type Outer struct {
+		Inner Inner
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Inner: Inner{
+			ID:   101,
+			Name: "alpha",
+		},
+	})
+
+	assert.Contains(t, out, "ID")
+	assert.Contains(t, out, "101")
+	assert.Contains(t, out, `"alpha"`)
+	assert.NotContains(t, out, "... (max depth)")
+}
+
+func TestMaxDepthBlocksStringerStructs(t *testing.T) {
+	type Inner struct {
+		When time.Time
+	}
+	type Outer struct {
+		Inner Inner
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Inner: Inner{
+			When: time.Unix(0, 0).UTC(),
+		},
+	})
+
+	assert.Contains(t, out, "... (max depth)")
+	assert.NotContains(t, out, "1970-01-01")
+}
+
+func TestIsComplexValue(t *testing.T) {
+	assert.False(t, isComplexValue(reflect.Value{}))
+
+	var ifaceHolder struct {
+		V any
+	}
+	ifaceVal := reflect.ValueOf(ifaceHolder).Field(0)
+	assert.False(t, isComplexValue(ifaceVal))
+
+	ifaceHolder = struct{ V any }{V: struct{}{}}
+	ifaceVal = reflect.ValueOf(ifaceHolder).Field(0)
+	assert.True(t, isComplexValue(ifaceVal))
+
+	var ptr *int
+	assert.False(t, isComplexValue(reflect.ValueOf(ptr)))
+
+	assert.False(t, isComplexValue(reflect.ValueOf(1)))
+	assert.True(t, isComplexValue(reflect.ValueOf(struct{}{})))
+}
+
+func TestMaxDepthBlocksNestedMapValues(t *testing.T) {
+	v := map[string]map[string]int{
+		"outer": {
+			"inner": 1,
+		},
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(v)
+
+	assert.Contains(t, out, "outer")
+	assert.Contains(t, out, "... (max depth)")
+	assert.NotContains(t, out, "inner")
+}
+
+func TestMaxDepthAllowsSliceScalars(t *testing.T) {
+	type Inner struct {
+		Values []int
+	}
+	type Outer struct {
+		Inner Inner
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Inner: Inner{
+			Values: []int{1, 2},
+		},
+	})
+
+	assert.Contains(t, out, "... (max depth)")
+	assert.NotContains(t, out, "0 => 1")
+}
+
+func TestMaxDepthAllowsPointerScalars(t *testing.T) {
+	type Inner struct {
+		ID *int
+	}
+	type Outer struct {
+		Inner Inner
+	}
+	id := 42
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Inner: Inner{
+			ID: &id,
+		},
+	})
+
+	assert.Contains(t, out, "ID")
+	assert.Contains(t, out, "42")
+	assert.NotContains(t, out, "... (max depth)")
+}
+
+func TestMaxDepthAllowsPointerStructFields(t *testing.T) {
+	type Inner struct {
+		Name string
+	}
+	type Outer struct {
+		Inner *Inner
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Inner: &Inner{Name: "alpha"},
+	})
+
+	assert.Contains(t, out, "alpha")
+	assert.NotContains(t, out, "... (max depth)")
+}
+
+func TestMaxDepthAllowsInterfaceScalar(t *testing.T) {
+	type Outer struct {
+		Value any
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Value: "hello",
+	})
+
+	assert.Contains(t, out, `"hello"`)
+	assert.NotContains(t, out, "... (max depth)")
+}
+
+func TestMaxDepthAllowsInterfaceStructFields(t *testing.T) {
+	type Inner struct {
+		Name string
+	}
+	type Outer struct {
+		Value any
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Value: Inner{Name: "alpha"},
+	})
+
+	assert.Contains(t, out, "alpha")
+	assert.NotContains(t, out, "... (max depth)")
+}
+
+func TestMaxDepthAllowsArrayScalars(t *testing.T) {
+	type Inner struct {
+		Values [2]int
+	}
+	type Outer struct {
+		Inner Inner
+	}
+
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		Inner: Inner{
+			Values: [2]int{1, 2},
+		},
+	})
+
+	assert.Contains(t, out, "... (max depth)")
+	assert.NotContains(t, out, "0 => 1")
+}
+
+func TestMaxDepthEdgeCases(t *testing.T) {
+	type Inner struct {
+		ID int
+	}
+	type Outer struct {
+		MapVal      map[string]int
+		SliceVal    []int
+		ArrayVal    [2]int
+		MapPtr      *map[string]int
+		StructPtr   *Inner
+		Interface   any
+		NilMap      map[string]int
+		NilSlice    []int
+		NilSlicePtr *[]int
+	}
+
+	m := map[string]int{"key": 1}
+	s := []int{1, 2}
+	a := [2]int{3, 4}
+	out := newDumperT(t, WithMaxDepth(1)).DumpStr(Outer{
+		MapVal:      m,
+		SliceVal:    s,
+		ArrayVal:    a,
+		MapPtr:      &m,
+		StructPtr:   &Inner{ID: 7},
+		Interface:   Inner{ID: 9},
+		NilMap:      nil,
+		NilSlice:    nil,
+		NilSlicePtr: nil,
+	})
+
+	assert.Contains(t, out, "MapVal")
+	assert.Contains(t, out, "... (max depth)")
+	assert.NotContains(t, out, "key")
+	assert.NotContains(t, out, "0 => 1")
+	assert.NotContains(t, out, "0 => 3")
+
+	assert.Contains(t, out, "StructPtr")
+	assert.Contains(t, out, "ID")
+	assert.Contains(t, out, "7")
+
+	assert.Contains(t, out, "Interface")
+	assert.Contains(t, out, "9")
+
+	assert.Contains(t, out, "NilMap")
+	assert.Contains(t, out, "map[string]int(nil)")
+	assert.Contains(t, out, "NilSlice")
+	assert.Contains(t, out, "[]int(nil)")
+	assert.Contains(t, out, "NilSlicePtr")
+	assert.Contains(t, out, "[]int(nil)")
+}
+
+func TestChanValueRendering(t *testing.T) {
+	var nilCh chan int
+	out := dumpStrT(t, nilCh)
+	assert.Contains(t, out, "chan int(nil)")
+
+	ch := make(chan int)
+	out = dumpStrT(t, ch)
+	assert.Contains(t, out, "chan int")
+}
+
+func TestStringerNilPointer(t *testing.T) {
+	var tptr *time.Time
+	d := newDumperT(t)
+	state := newDumpState()
+	var b strings.Builder
+	tw := tabwriter.NewWriter(&b, 0, 0, 1, ' ', 0)
+	d.printValue(tw, reflect.ValueOf(tptr), 0, state)
+	tw.Flush()
+	out := b.String()
+	assert.Contains(t, out, "time.Time(nil)")
+	assert.NotContains(t, out, "... (max depth)")
+
+	tptr = nil
+	out = d.asStringer(reflect.ValueOf(tptr))
+	assert.Contains(t, out, "time.Time(nil)")
+}
+
 func TestMapOutput(t *testing.T) {
 	m := map[string]int{"a": 1, "b": 2}
 	out := dumpStrT(t, m)
@@ -1337,5 +1591,62 @@ func TestDumpStr_Coverage(t *testing.T) {
 
 	if !strings.Contains(out, "123") {
 		t.Fatalf("expected DumpStr to include value, got: %s", out)
+	}
+}
+
+func TestShouldTruncateAtDepth(t *testing.T) {
+	type sample struct {
+		Value string
+	}
+
+	tests := []struct {
+		name     string
+		value    reflect.Value
+		indent   int
+		maxDepth int
+		want     bool
+	}{
+		{
+			name:     "indent below max does not truncate",
+			value:    reflect.ValueOf(map[int]string{}),
+			indent:   0,
+			maxDepth: 1,
+			want:     false,
+		},
+		{
+			name:     "indent above max truncates complex values",
+			value:    reflect.ValueOf(sample{}),
+			indent:   2,
+			maxDepth: 1,
+			want:     true,
+		},
+		{
+			name:     "indent equals max truncates collections",
+			value:    reflect.ValueOf([]int{1, 2}),
+			indent:   1,
+			maxDepth: 1,
+			want:     true,
+		},
+		{
+			name:     "indent equals max allows structs",
+			value:    reflect.ValueOf(sample{}),
+			indent:   1,
+			maxDepth: 1,
+			want:     false,
+		},
+		{
+			name:     "indent equals max allows scalars",
+			value:    reflect.ValueOf(42),
+			indent:   1,
+			maxDepth: 1,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldTruncateAtDepth(tt.value, tt.indent, tt.maxDepth)
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }
