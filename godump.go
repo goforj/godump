@@ -1186,6 +1186,9 @@ func contains(candidates []reflect.Kind, target reflect.Kind) bool {
 }
 
 func (d *Dumper) shouldIncludeField(name string) bool {
+	if len(d.includeFields) > 0 && !d.matchesAny(name, d.includeFields, FieldMatchExact) {
+		return false
+	}
 	return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
 }
 

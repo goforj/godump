@@ -1200,6 +1200,22 @@ func TestDisableStringer(t *testing.T) {
 	assert.Contains(t, v, `-secret => 👻 hidden stringer`)
 }
 
+func TestOnlyFields(t *testing.T) {
+	type User struct {
+		ID       int
+		Email    string
+		Password string
+	}
+
+	d := newDumperT(t, WithOnlyFields("ID", "Email"))
+	out := d.DumpStr(User{ID: 10, Email: "user@example.com", Password: "secret"})
+	assert.Contains(t, out, "+ID")
+	assert.Contains(t, out, "+Email")
+	assert.Contains(t, out, "user@example.com")
+	assert.NotContains(t, out, "Password")
+	assert.NotContains(t, out, "secret")
+}
+
 func TestFieldFiltersExact(t *testing.T) {
 	type User struct {
 		UserID   int
