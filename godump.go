@@ -1164,6 +1164,7 @@ func detectColor() bool {
 	return true
 }
 
+// newColorizer picks the appropriate colorizer based on environment overrides.
 func newColorizer() Colorizer {
 	if detectColor() {
 		return colorizeANSI
@@ -1171,6 +1172,7 @@ func newColorizer() Colorizer {
 	return colorizeUnstyled
 }
 
+// contains reports whether target exists in the candidates slice.
 func contains(candidates []reflect.Kind, target reflect.Kind) bool {
 	for _, candidate := range candidates {
 		if candidate == target {
@@ -1181,6 +1183,7 @@ func contains(candidates []reflect.Kind, target reflect.Kind) bool {
 	return false
 }
 
+// shouldIncludeField returns true when the field survives include/exclude filtering (include takes precedence).
 func (d *Dumper) shouldIncludeField(name string) bool {
 	if len(d.includeFields) > 0 && !d.matchesAny(name, d.includeFields, FieldMatchExact) {
 		return false
@@ -1188,10 +1191,12 @@ func (d *Dumper) shouldIncludeField(name string) bool {
 	return !d.matchesAny(name, d.excludeFields, d.fieldMatchMode)
 }
 
+// shouldRedactField reports whether the field should be replaced with the redacted placeholder.
 func (d *Dumper) shouldRedactField(name string) bool {
 	return d.matchesAny(name, d.redactFields, d.redactMatchMode)
 }
 
+// matchesAny checks whether name matches any of the candidates using the provided mode.
 func (d *Dumper) matchesAny(name string, candidates []string, mode FieldMatchMode) bool {
 	if len(candidates) == 0 {
 		return false
@@ -1232,11 +1237,13 @@ func (d *Dumper) redactedValue(v reflect.Value) string {
 	return d.colorize(colorRed, "<redacted>") + d.colorize(colorGray, " #"+typeStr)
 }
 
+// isComplexValue reports whether v unwraps to a struct/map/slice/array.
 func isComplexValue(v reflect.Value) bool {
 	_, ok := complexBaseKind(v)
 	return ok
 }
 
+// complexBaseKind unwraps interfaces/pointers, rejects nil, and returns the underlying complex kind if present.
 func complexBaseKind(v reflect.Value) (reflect.Kind, bool) {
 	if !v.IsValid() {
 		return 0, false
@@ -1264,15 +1271,17 @@ func complexBaseKind(v reflect.Value) (reflect.Kind, bool) {
 	}
 }
 
+// shouldTruncateAtDepth determines whether we should print a truncation placeholder at this depth for complex values.
 func shouldTruncateAtDepth(v reflect.Value, indent, maxDepth int) bool {
-	if indent > maxDepth && isComplexValue(v) {
-		return true
-	}
 	if indent < maxDepth {
 		return false
 	}
 
 	kind, ok := complexBaseKind(v)
+	if indent > maxDepth {
+		return ok
+	}
+
 	if !ok {
 		return false
 	}

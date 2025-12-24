@@ -1593,3 +1593,60 @@ func TestDumpStr_Coverage(t *testing.T) {
 		t.Fatalf("expected DumpStr to include value, got: %s", out)
 	}
 }
+
+func TestShouldTruncateAtDepth(t *testing.T) {
+	type sample struct {
+		Value string
+	}
+
+	tests := []struct {
+		name     string
+		value    reflect.Value
+		indent   int
+		maxDepth int
+		want     bool
+	}{
+		{
+			name:     "indent below max does not truncate",
+			value:    reflect.ValueOf(map[int]string{}),
+			indent:   0,
+			maxDepth: 1,
+			want:     false,
+		},
+		{
+			name:     "indent above max truncates complex values",
+			value:    reflect.ValueOf(sample{}),
+			indent:   2,
+			maxDepth: 1,
+			want:     true,
+		},
+		{
+			name:     "indent equals max truncates collections",
+			value:    reflect.ValueOf([]int{1, 2}),
+			indent:   1,
+			maxDepth: 1,
+			want:     true,
+		},
+		{
+			name:     "indent equals max allows structs",
+			value:    reflect.ValueOf(sample{}),
+			indent:   1,
+			maxDepth: 1,
+			want:     false,
+		},
+		{
+			name:     "indent equals max allows scalars",
+			value:    reflect.ValueOf(42),
+			indent:   1,
+			maxDepth: 1,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldTruncateAtDepth(tt.value, tt.indent, tt.maxDepth)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
