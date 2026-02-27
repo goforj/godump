@@ -41,6 +41,7 @@ func containsString(container string, item any) bool {
 	return strings.Contains(container, needle)
 }
 
+// Contains fails the test if s does not contain contains.
 func Contains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
 	t.Helper()
 	str, ok := s.(string)
@@ -53,6 +54,7 @@ func Contains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
 	return true
 }
 
+// NotContains fails the test if s contains contains.
 func NotContains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
 	t.Helper()
 	str, ok := s.(string)
@@ -65,6 +67,7 @@ func NotContains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
 	return true
 }
 
+// Equal fails the test if expected and actual are not deeply equal.
 func Equal(t *testing.T, expected any, actual any, msgAndArgs ...any) bool {
 	t.Helper()
 	if !reflect.DeepEqual(expected, actual) {
@@ -73,6 +76,9 @@ func Equal(t *testing.T, expected any, actual any, msgAndArgs ...any) bool {
 	return true
 }
 
+// True fails the test if value is false.
+//
+//nolint:revive // bool flag parameter is intentional for assert-style API parity.
 func True(t *testing.T, value bool, msgAndArgs ...any) bool {
 	t.Helper()
 	if !value {
@@ -81,6 +87,9 @@ func True(t *testing.T, value bool, msgAndArgs ...any) bool {
 	return true
 }
 
+// False fails the test if value is true.
+//
+//nolint:revive // bool flag parameter is intentional for assert-style API parity.
 func False(t *testing.T, value bool, msgAndArgs ...any) bool {
 	t.Helper()
 	if value {
@@ -102,6 +111,7 @@ func isNil(v any) bool {
 	}
 }
 
+// Nil fails the test if v is not nil.
 func Nil(t *testing.T, v any, msgAndArgs ...any) bool {
 	t.Helper()
 	if !isNil(v) {
@@ -110,6 +120,7 @@ func Nil(t *testing.T, v any, msgAndArgs ...any) bool {
 	return true
 }
 
+// JSONEq fails the test if expected and actual are not equivalent JSON values.
 func JSONEq(t *testing.T, expected string, actual string, msgAndArgs ...any) bool {
 	t.Helper()
 	var e any
@@ -126,6 +137,7 @@ func JSONEq(t *testing.T, expected string, actual string, msgAndArgs ...any) boo
 	return true
 }
 
+// NoError fails the test if err is non-nil.
 func NoError(t *testing.T, err error, msgAndArgs ...any) bool {
 	t.Helper()
 	if err != nil {
