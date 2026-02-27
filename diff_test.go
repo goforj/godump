@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	assert "github.com/goforj/godump/internal/testassert"
 )
 
 func TestDiffStrTypeMismatch(t *testing.T) {

@@ -14,9 +14,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/assert"
+	assert "github.com/goforj/godump/internal/testassert"
+	require "github.com/goforj/godump/internal/testrequire"
 )
 
 func newDumperT(t *testing.T, opts ...Option) *Dumper {
@@ -1436,7 +1435,7 @@ func TestDumpJSON(t *testing.T) {
 
 		var got []any
 		err := json.Unmarshal([]byte(output), &got)
-		require.NoError(t, err, "json.Unmarshal failed with output: %q", output)
+		require.NoError(t, err, fmt.Sprintf("json.Unmarshal failed with output: %q", output))
 
 		assert.Equal(t, []any{"foo", float64(123), true}, got)
 	})
