@@ -48,6 +48,11 @@ jobs:
         run: go test ./... -v -race
         timeout-minutes: 8
 
+      - name: Run examples tests
+        working-directory: examples
+        run: go test ./... -v -race
+        timeout-minutes: 8
+
   security:
     name: Security Check
     runs-on: ubuntu-latest
@@ -65,11 +70,13 @@ jobs:
       - name: Check go.mod is tidy
         run: |
           go mod tidy
-          git diff --exit-code go.mod go.sum
+          (cd examples && go mod tidy)
+          git diff --exit-code go.mod go.sum examples/go.mod examples/go.sum
         timeout-minutes: 2
 
       - name: Check for vulnerabilities
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
+          (cd examples && govulncheck ./...)
         timeout-minutes: 5

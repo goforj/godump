@@ -25,6 +25,14 @@ jobs:
       - name: Run tests
         run: go test ./... -v
 
+      - name: Install examples dependencies
+        working-directory: examples
+        run: go mod tidy
+
+      - name: Run examples tests
+        working-directory: examples
+        run: go test ./... -v
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:

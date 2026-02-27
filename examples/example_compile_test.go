@@ -1,4 +1,4 @@
-package godump
+package main
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	_ "github.com/goforj/godump"
 )
 
 var errGoBuildFailed = errors.New("go build failed")
@@ -17,9 +19,7 @@ var errGoBuildFailed = errors.New("go build failed")
 func TestExamplesBuild(t *testing.T) {
 	t.Parallel()
 
-	examplesDir := "examples"
-
-	entries, err := os.ReadDir(examplesDir)
+	entries, err := os.ReadDir(".")
 	if err != nil {
 		t.Fatalf("cannot read examples directory: %v", err)
 	}
@@ -31,7 +31,10 @@ func TestExamplesBuild(t *testing.T) {
 
 		// CAPTURE LOOP VARS
 		name := e.Name()
-		path := filepath.Join(examplesDir, name)
+		path := filepath.Join(".", name)
+		if _, err := os.Stat(filepath.Join(path, "main.go")); err != nil {
+			continue
+		}
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel() // 🔑 enable concurrency
