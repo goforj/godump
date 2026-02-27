@@ -25,7 +25,7 @@ func NoError(t *testing.T, err error, msgAndArgs ...any) {
 }
 
 // Contains fails the test immediately if s does not contain contains.
-func Contains(t *testing.T, s any, contains any, msgAndArgs ...any) {
+func Contains(t *testing.T, s, contains any, msgAndArgs ...any) {
 	t.Helper()
 	if !assert.Contains(t, s, contains, msgAndArgs...) {
 		t.FailNow()

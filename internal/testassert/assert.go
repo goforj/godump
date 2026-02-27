@@ -42,7 +42,7 @@ func containsString(container string, item any) bool {
 }
 
 // Contains fails the test if s does not contain contains.
-func Contains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
+func Contains(t *testing.T, s, contains any, msgAndArgs ...any) bool {
 	t.Helper()
 	str, ok := s.(string)
 	if !ok {
@@ -55,7 +55,7 @@ func Contains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
 }
 
 // NotContains fails the test if s contains contains.
-func NotContains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
+func NotContains(t *testing.T, s, contains any, msgAndArgs ...any) bool {
 	t.Helper()
 	str, ok := s.(string)
 	if !ok {
@@ -68,7 +68,7 @@ func NotContains(t *testing.T, s any, contains any, msgAndArgs ...any) bool {
 }
 
 // Equal fails the test if expected and actual are not deeply equal.
-func Equal(t *testing.T, expected any, actual any, msgAndArgs ...any) bool {
+func Equal(t *testing.T, expected, actual any, msgAndArgs ...any) bool {
 	t.Helper()
 	if !reflect.DeepEqual(expected, actual) {
 		return fail(t, fmt.Sprintf("not equal\nexpected: %#v\nactual:   %#v", expected, actual), msgAndArgs...)
@@ -121,7 +121,7 @@ func Nil(t *testing.T, v any, msgAndArgs ...any) bool {
 }
 
 // JSONEq fails the test if expected and actual are not equivalent JSON values.
-func JSONEq(t *testing.T, expected string, actual string, msgAndArgs ...any) bool {
+func JSONEq(t *testing.T, expected, actual string, msgAndArgs ...any) bool {
 	t.Helper()
 	var e any
 	var a any
