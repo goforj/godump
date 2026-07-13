@@ -352,7 +352,7 @@ func renderAPI(funcs []*FuncDoc) string {
 
 		buf.WriteString(fmt.Sprintf("| **%s** | %s |\n",
 			group,
-			strings.Join(links, " "),
+			strings.Join(links, " · "),
 		))
 	}
 

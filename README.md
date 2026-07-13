@@ -11,7 +11,7 @@
     <a href="https://goreportcard.com/report/github.com/goforj/godump"><img src="https://goreportcard.com/badge/github.com/goforj/godump" alt="Go Report Card"></a>
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
 <!-- test-count:embed:start -->
-    <img src="https://img.shields.io/badge/tests-162-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-130-brightgreen" alt="Tests">
 <!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
@@ -232,11 +232,11 @@ If a pointer has already been printed:
 | Group | Functions |
 |------:|-----------|
 | **Builder** | [NewDumper](#newdumper) |
-| **Diff** | [Diff](#diff) [DiffHTML](#diffhtml) [DiffStr](#diffstr) |
-| **Dump** | [Dd](#dd) [Dump](#dump) [DumpStr](#dumpstr) [Fdump](#fdump) |
+| **Diff** | [Diff](#diff) · [DiffHTML](#diffhtml) · [DiffStr](#diffstr) |
+| **Dump** | [Dd](#dd) · [Dump](#dump) · [DumpStr](#dumpstr) · [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
-| **JSON** | [DumpJSON](#dumpjson) [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) [WithExcludeFields](#withexcludefields) [WithFieldMatchMode](#withfieldmatchmode) [WithMaxDepth](#withmaxdepth) [WithMaxItems](#withmaxitems) [WithMaxStringLen](#withmaxstringlen) [WithOnlyFields](#withonlyfields) [WithRedactFields](#withredactfields) [WithRedactMatchMode](#withredactmatchmode) [WithRedactSensitive](#withredactsensitive) [WithSkipStackFrames](#withskipstackframes) [WithWriter](#withwriter) [WithoutColor](#withoutcolor) [WithoutHeader](#withoutheader) |
+| **JSON** | [DumpJSON](#dumpjson) · [DumpJSONStr](#dumpjsonstr) |
+| **Options** | [WithDisableStringer](#withdisablestringer) · [WithExcludeFields](#withexcludefields) · [WithFieldMatchMode](#withfieldmatchmode) · [WithMaxDepth](#withmaxdepth) · [WithMaxItems](#withmaxitems) · [WithMaxStringLen](#withmaxstringlen) · [WithOnlyFields](#withonlyfields) · [WithRedactFields](#withredactfields) · [WithRedactMatchMode](#withredactmatchmode) · [WithRedactSensitive](#withredactsensitive) · [WithSkipStackFrames](#withskipstackframes) · [WithWriter](#withwriter) · [WithoutColor](#withoutcolor) · [WithoutHeader](#withoutheader) |
 
 
 ## Builder
