@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/godump.png" width="350" alt="godump logo – Go pretty printer and Laravel-style dump/dd debugging tool">
+  <img src="https://raw.githubusercontent.com/goforj/godump/main/docs/godump.png" width="350" alt="godump logo – Go pretty printer and Laravel-style dump/dd debugging tool">
 </p>
 
 <p align="center">
