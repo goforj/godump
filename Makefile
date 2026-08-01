@@ -5,22 +5,21 @@ HELP_FUN = %help; while (<>) { /^([A-Za-z0-9_-]+)\s*:.*\#\#(?:@([A-Za-z0-9_-]+))
 help: ##@other Show this help.
 	@perl -e '$(HELP_FUN)' $(MAKEFILE_LIST)
 
-##@quality
-test: ##@quality Run the test suite.
+##@tests
+test: ##@tests Run the test suite.
 	go test ./...
 
-vet: ##@quality Run Go vet.
+##@analysis
+vet: ##@analysis Run Go vet.
 	go vet ./...
 
 MODERNIZE_CMD = go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@v0.18.1
 
 ##@modernization
-modernize: modernize-fix ##@modernization Apply Go modernization fixes.
-
-modernize-fix: ##@modernization Apply Go modernization fixes.
+modernize: ##@modernization Apply Go modernization fixes.
 	@echo "Running gopls modernize with -fix..."
 	$(MODERNIZE_CMD) -test -fix ./...
 
-modernize-check: ##@modernization Check for needed Go modernizations.
+modernize-check: ##@analysis Check for needed Go modernizations.
 	@echo "Checking if code needs modernization..."
 	$(MODERNIZE_CMD) -test ./...
