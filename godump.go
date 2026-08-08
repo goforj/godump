@@ -138,6 +138,7 @@ type Dumper struct {
 	redactFields       []string
 	fieldMatchMode     FieldMatchMode
 	redactMatchMode    FieldMatchMode
+	hideTypes          bool
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -161,6 +162,26 @@ func newDumpState() *dumpState {
 	return &dumpState{
 		nextRefID: 1,
 		refs:      map[uintptr]int{},
+	}
+}
+
+// WithoutTypes hides type information when the structure will be dumped.
+// @group Options
+//
+// Example: hide type information
+//
+//	v := map[string]map[string]int{"a": {"b": 1}}
+//	d := godump.NewDumper(godump.WithoutTypes())
+//	d.Dump(v)
+//	// {
+//	//   a => {
+//	//     b => 1
+//	//   }
+//	// }
+func WithoutTypes() Option {
+	return func(d *Dumper) *Dumper {
+		d.hideTypes = true
+		return d
 	}
 }
 
@@ -911,7 +932,10 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 
 	if isNil(v) {
 		typeStr := d.getTypeString(v.Type())
-		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
+		if !d.hideTypes {
+			fmt.Fprintf(w, d.colorize(colorLime, typeStr))
+		}
+		fmt.Fprintf(w, d.colorize(colorGray, "(nil)"))
 		return
 	}
 
@@ -928,7 +952,10 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 	switch v.Kind() {
 	case reflect.Chan:
 		typ := d.colorizer(colorGray, d.getTypeString(v.Type()))
-		fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, typ), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
+		if !d.hideTypes {
+			fmt.Fprintf(w, "%s", d.colorize(colorGray, typ))
+		}
+		fmt.Fprintf(w, "(%s)", d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
 		return
 	}
 
@@ -958,7 +985,10 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 		d.printValue(w, v.Elem(), indent, state)
 	case reflect.Struct:
 		t := v.Type()
-		fmt.Fprintf(w, "%s {", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		if !d.hideTypes {
+			fmt.Fprintf(w, "%s ", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		}
+		fmt.Fprint(w, "{")
 		fmt.Fprintln(w)
 
 		for i := 0; i < t.NumField(); i++ {
@@ -987,9 +1017,16 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 	case reflect.Complex64, reflect.Complex128:
 		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprintf("%v", v.Complex())))
 	case reflect.UnsafePointer:
-		fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
+		if d.hideTypes {
+			fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("%#x", v.Pointer())))
+		} else {
+			fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
+		}
 	case reflect.Map:
-		fmt.Fprintf(w, "%s {", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		if !d.hideTypes {
+			fmt.Fprintf(w, "%s ", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		}
+		fmt.Fprint(w, "{")
 		fmt.Fprintln(w)
 
 		keys := v.MapKeys()
@@ -1018,7 +1055,9 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 		}
 
 		// Default rendering for other slices/arrays
-		fmt.Fprintf(w, "%s [", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		if !d.hideTypes {
+			fmt.Fprintf(w, "%s ", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		}
 		fmt.Fprintln(w)
 
 		for i := 0; i < v.Len(); i++ {
@@ -1069,7 +1108,9 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 		return
 	}
 
-	fmt.Fprint(w, d.colorizer(colorGray, fmt.Sprintf(" #%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+	if !d.hideTypes {
+		fmt.Fprint(w, d.colorizer(colorGray, fmt.Sprintf(" #%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+	}
 }
 
 // asStringer checks if the value implements fmt.Stringer and returns its string representation.
