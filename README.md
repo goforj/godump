@@ -235,7 +235,7 @@ If a pointer has already been printed:
 | **Dump** | [Dd](#dd) · [Dump](#dump) · [DumpStr](#dumpstr) · [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) · [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) · [WithExcludeFields](#withexcludefields) · [WithFieldMatchMode](#withfieldmatchmode) · [WithMaxDepth](#withmaxdepth) · [WithMaxItems](#withmaxitems) · [WithMaxStringLen](#withmaxstringlen) · [WithOnlyFields](#withonlyfields) · [WithRedactFields](#withredactfields) · [WithRedactMatchMode](#withredactmatchmode) · [WithRedactSensitive](#withredactsensitive) · [WithSkipStackFrames](#withskipstackframes) · [WithWriter](#withwriter) · [WithoutColor](#withoutcolor) · [WithoutHeader](#withoutheader) |
+| **Options** | [WithDisableStringer](#withdisablestringer) · [WithExcludeFields](#withexcludefields) · [WithFieldMatchMode](#withfieldmatchmode) · [WithMaxDepth](#withmaxdepth) · [WithMaxItems](#withmaxitems) · [WithMaxStringLen](#withmaxstringlen) · [WithOnlyFields](#withonlyfields) · [WithRedactFields](#withredactfields) · [WithRedactMatchMode](#withredactmatchmode) · [WithRedactSensitive](#withredactsensitive) · [WithSkipStackFrames](#withskipstackframes) · [WithWriter](#withwriter) · [WithoutColor](#withoutcolor) · [WithoutHeader](#withoutheader) · [WithoutTypes](#withouttypes) |
 
 
 ## Builder
@@ -754,6 +754,21 @@ WithoutHeader disables printing the source location header.
 d := godump.NewDumper(godump.WithoutHeader())
 d.Dump("hello")
 // "hello" #string
+```
+
+### <a id="withouttypes"></a>WithoutTypes
+
+WithoutTypes hides type information when the structure will be dumped.
+
+```go
+v := map[string]map[string]int{"a": {"b": 1}}
+d := godump.NewDumper(godump.WithoutTypes())
+d.Dump(v)
+// {
+//   a => {
+//     b => 1
+//   }
+// }
 ```
 <!-- api:embed:end -->
 
