@@ -1,0 +1,39 @@
+name: Security
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: stable
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+      - name: Scan analyzable Go modules
+        shell: bash
+        run: |
+          while IFS= read -r -d '' module; do
+            module_dir="${module%/go.mod}"
+            if (cd -- "$module_dir" && go list ./... >/dev/null); then
+              (cd -- "$module_dir" && govulncheck -scan=package ./...)
+            else
+              printf 'Skipping non-analyzable Go module: %s\n' "$module_dir"
+            fi
+          done < <(find . -name go.mod -type f -print0)
+      - name: Scan Git history for secrets
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2
+        with:
+          args: detect --source . --log-opts="--all"

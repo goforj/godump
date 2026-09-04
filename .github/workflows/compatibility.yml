@@ -9,6 +9,9 @@ on:
     # Run weekly on Sundays at 3 AM UTC
     - cron: "0 3 * * 0"
 
+permissions:
+  contents: read
+
 jobs:
   go-versions:
     name: Lookup Go versions
@@ -18,9 +21,9 @@ jobs:
       latest: ${{ steps.versions.outputs.latest }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: arnested/go-version-action@v1
+      - uses: arnested/go-version-action@90b2bf6e8cbbba34a5e514cfe9d3f7541d91ffa7 # v1
         id: versions
         with:
           unstable: true # this includes the future -rc versions
@@ -36,10 +39,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: ${{ matrix.go-version }}
           check-latest: true
@@ -60,10 +63,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: "stable"
 
