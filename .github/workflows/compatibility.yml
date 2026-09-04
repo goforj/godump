@@ -79,7 +79,7 @@ jobs:
 
       - name: Check for vulnerabilities
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           govulncheck ./...
           (cd examples && govulncheck ./...)
         timeout-minutes: 5

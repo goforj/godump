@@ -11,13 +11,13 @@ on:
 
 jobs:
   dependency-review:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.ENABLE_GITHUB_ADVANCED_SECURITY == 'true'
     permissions:
       contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Review dependency changes
-        uses: actions/dependency-review-action@ce3cf9537a52e8119d91fd484ab5b8a807627bf8 # v4.6.0
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
 
   codeql:
     permissions:
@@ -26,9 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@fddeee1a7ece751b577e409a89057319e3172939 # v4
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           languages: go
           build-mode: manual
@@ -37,10 +37,18 @@ jobs:
         run: |
           while IFS= read -r -d '' module; do
             module_dir="${module%/go.mod}"
-            (cd -- "$module_dir" && go build ./...)
+            if ! packages="$(cd -- "$module_dir" && GOWORK=off go list ./...)"; then
+              printf 'Unable to discover packages in Go module: %s\n' "$module_dir" >&2
+              exit 1
+            fi
+            if [[ -z "$packages" ]]; then
+              printf 'Skipping empty Go module: %s\n' "$module_dir"
+              continue
+            fi
+            (cd -- "$module_dir" && GOWORK=off go test -run '^$' ./...)
           done < <(find . \( -path './.git' -o -path './node_modules' \) -prune -o -name go.mod -type f -print0)
       - name: Analyze Go source
-        uses: github/codeql-action/analyze@fddeee1a7ece751b577e409a89057319e3172939 # v4
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           category: /language:go
 
@@ -50,9 +58,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Go
-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
       - name: Install CycloneDX generator
@@ -67,14 +75,15 @@ jobs:
             module_dir="${module%/go.mod}"
             discovered=$((discovered + 1))
             output="$GITHUB_WORKSPACE/sbom/module-$discovered.cdx.json"
-            (cd -- "$module_dir" && cyclonedx-gomod mod -output "$output")
+            (cd -- "$module_dir" && cyclonedx-gomod mod -json -type library -test -output "$output")
+            jq -e '.bomFormat == "CycloneDX" and .metadata.component.type == "library" and all(.components[]?; .name != "..")' "$output" >/dev/null
             generated=$((generated + 1))
           done < <(find . \( -path './.git' -o -path './node_modules' \) -prune -o -name go.mod -type f -print0)
           test "$discovered" -gt 0
           test "$discovered" -eq "$generated"
           printf 'discovered=%s\ngenerated=%s\n' "$discovered" "$generated" > sbom/coverage.txt
       - name: Upload SBOMs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cycloneDX-sboms
           path: sbom
