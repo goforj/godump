@@ -42,5 +42,5 @@ jobs:
           done < <(find . \( -path './.git' -o -path './node_modules' \) -prune -o -name go.mod -type f -print0)
       - name: Scan Git history for secrets
         run: |
-          go install github.com/gitleaks/gitleaks/v8@v8.30.1
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
           gitleaks git . --redact --no-banner
