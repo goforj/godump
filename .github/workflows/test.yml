@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "stable"
 
@@ -47,6 +47,6 @@ jobs:
         run: go test -coverprofile=coverage.txt
 
       - name: Upload results to Codecov
-        uses: codecov/codecov-action@04b047e8bb82a0c002c8312c1c880fbc6a999d45 # v5
+        uses: codecov/codecov-action@a99c28d3f0da835de33ff2feb2e15691c7b9641f # v7
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

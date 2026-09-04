@@ -11,7 +11,7 @@ on:
 
 jobs:
   dependency-review:
-    if: github.event_name == 'pull_request' && vars.ENABLE_GITHUB_ADVANCED_SECURITY == 'true'
+    if: github.event_name == 'pull_request' && vars.ENABLE_DEPENDENCY_REVIEW == 'true'
     permissions:
       contents: read
     runs-on: ubuntu-latest
