@@ -42,6 +42,7 @@ jobs:
       - name: Build every Go module
         shell: bash
         run: |
+          built_modules=0
           while IFS= read -r -d '' module; do
             module_dir="${module%/go.mod}"
             if ! packages="$(cd -- "$module_dir" && GOWORK=off go list ./...)"; then
@@ -52,8 +53,16 @@ jobs:
               printf 'Skipping empty Go module: %s\n' "$module_dir"
               continue
             fi
-            (cd -- "$module_dir" && GOWORK=off go test -run '^$' ./...)
+            built_modules=$((built_modules + 1))
+            output_dir="$RUNNER_TEMP/codeql-build/$built_modules"
+            mkdir -p "$output_dir"
+            package_count=0
+            while IFS= read -r package; do
+              package_count=$((package_count + 1))
+              (cd -- "$module_dir" && GOWORK=off go test -c -o "$output_dir/package-$package_count.test" "$package")
+            done <<< "$packages"
           done < <(find . \( -path './.git' -o -path './node_modules' \) -prune -o -name go.mod -type f -print0)
+          test "$built_modules" -gt 0
       - name: Analyze Go source
         uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
