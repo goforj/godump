@@ -15,17 +15,23 @@ linters:
     - depguard
     - exhaustive
     - exhaustruct
+    - exhaustruct_v5
+    - embeddedstructfieldcheck
+    - goconst
     - gochecknoglobals
     - godot
     - mnd
     - paralleltest
     - testpackage
     - varnamelen
+    - modernize
+    - noinlineerr
 
     # strict formatting
     - nlreturn
     - whitespace
     - wsl
+    - wsl_v5
 
     # nice to have
     - usetesting
@@ -48,6 +54,7 @@ linters:
     govet:
       disable:
         - fieldalignment
+        - inline
       enable-all: true
 
     maintidx:
@@ -104,11 +111,18 @@ linters:
           disabled: true
         - name: unused-receiver
           disabled: true
+        - name: unhandled-error
+          disabled: true
+        - name: enforce-switch-style
+          disabled: true
+        - name: identical-switch-branches
+          disabled: true
 
     staticcheck:
       checks:
         - all
         - -ST1000
+        - -QF1012
 
     wsl:
       allow-trailing-comment: true

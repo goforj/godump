@@ -1,0 +1,59 @@
+name: Supply Chain
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+
+  sbom:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - name: Install CycloneDX generator
+        run: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.10.0
+      - name: Generate module SBOMs
+        shell: bash
+        run: |
+          mkdir -p sbom
+          discovered=0
+          generated=0
+          while IFS= read -r -d '' module; do
+            module_dir="${module%/go.mod}"
+            discovered=$((discovered + 1))
+            output="$GITHUB_WORKSPACE/sbom/module-$discovered.cdx.json"
+            (cd -- "$module_dir" && cyclonedx-gomod mod -json -type library -test -output "$output")
+            jq -e '.bomFormat == "CycloneDX" and .metadata.component.type == "library" and all(.components[]?; .name != "..")' "$output" >/dev/null
+            generated=$((generated + 1))
+          done < <(find . \( -path './.git' -o -path './node_modules' \) -prune -o -name go.mod -type f -print0)
+          test "$discovered" -gt 0
+          test "$discovered" -eq "$generated"
+          printf 'discovered=%s\ngenerated=%s\n' "$discovered" "$generated" > sbom/coverage.txt
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cycloneDX-sboms
+          path: sbom
+          if-no-files-found: error
+
+# This repository publishes source modules and builds no release artifact, so artifact attestation is not applicable.
