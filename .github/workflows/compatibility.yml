@@ -23,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: arnested/go-version-action@83df3d2be676ba748e3c243a7f996e76c28cff23 # v2
+      - uses: arnested/go-version-action@cc3eac5ef2e6c3e780f3ecc2be9ef9cea799ef9f # v2
         id: versions
         with:
           unstable: true # this includes the future -rc versions
