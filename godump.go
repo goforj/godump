@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"unicode/utf8"
@@ -136,6 +137,7 @@ type Dumper struct {
 	includeFields      []string
 	excludeFields      []string
 	redactFields       []string
+	redactTagKeys      []string
 	fieldMatchMode     FieldMatchMode
 	redactMatchMode    FieldMatchMode
 	hideTypes          bool
@@ -448,6 +450,36 @@ func WithFieldMatchMode(mode FieldMatchMode) Option {
 func WithRedactFields(names ...string) Option {
 	return func(d *Dumper) *Dumper {
 		d.redactFields = append(d.redactFields, names...)
+		return d
+	}
+}
+
+// WithRedactTags redacts struct fields whose selected tag values equal "-".
+// With no keys, or with "*", it checks all tag keys. Calls accumulate selected keys.
+// Matching is case-sensitive and does not treat "-,omitempty" as "-".
+// It applies as text, HTML, and diff output traverse nested and embedded structs.
+// JSON helpers retain encoding/json behavior. Structs rendered through fmt.Stringer
+// are not traversed; use WithDisableStringer(true) to inspect their fields instead.
+// @group Options
+//
+// Example: redact fields omitted from JSON
+//
+//	type User struct {
+//		Name string
+//		Credential string `json:"-"`
+//	}
+//	d := godump.NewDumper(godump.WithRedactTags("json"), godump.WithoutHeader())
+//	d.Dump(User{Name: "Alice", Credential: "secret"})
+//	// #godump.User {
+//	//   +Name       => "Alice" #string
+//	//   +Credential => <redacted> #string
+//	// }
+func WithRedactTags(keys ...string) Option {
+	if len(keys) == 0 {
+		keys = []string{"*"}
+	}
+	return func(d *Dumper) *Dumper {
+		d.redactTagKeys = append(d.redactTagKeys, keys...)
 		return d
 	}
 }
@@ -1004,7 +1036,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 			}
 			indentPrint(w, indent+1, d.colorize(colorYellow, symbol)+field.Name)
 			fmt.Fprint(w, "	=> ")
-			if d.shouldRedactField(field.Name) {
+			if d.shouldRedactField(field.Name) || d.shouldRedactTag(field.Tag) {
 				fmt.Fprint(w, d.redactedValue(fieldVal))
 			} else {
 				d.printValue(w, fieldVal, indent+1, state)
@@ -1260,6 +1292,46 @@ func (d *Dumper) shouldIncludeField(name string) bool {
 // shouldRedactField reports whether the field should be replaced with the redacted placeholder.
 func (d *Dumper) shouldRedactField(name string) bool {
 	return d.matchesAny(name, d.redactFields, d.redactMatchMode)
+}
+
+// shouldRedactTag keeps serialization-tag redaction independent of field-name matching.
+func (d *Dumper) shouldRedactTag(tag reflect.StructTag) bool {
+	for _, key := range d.redactTagKeys {
+		if key == "*" {
+			return hasIgnoredStructTag(tag)
+		}
+		if tag.Get(key) == "-" {
+			return true
+		}
+	}
+	return false
+}
+
+// hasIgnoredStructTag follows reflect's tag syntax while discovering keys for wildcard matching.
+func hasIgnoredStructTag(tag reflect.StructTag) bool {
+	raw := string(tag)
+	for raw != "" {
+		raw = strings.TrimLeft(raw, " ")
+		if raw == "" {
+			break
+		}
+		end := 0
+		for end < len(raw) && raw[end] > ' ' && raw[end] != ':' && raw[end] != '"' && raw[end] != 0x7f {
+			end++
+		}
+		if end == 0 || end+1 >= len(raw) || raw[end] != ':' || raw[end+1] != '"' {
+			return false
+		}
+		quoted, err := strconv.QuotedPrefix(raw[end+1:])
+		if err != nil {
+			return false
+		}
+		if reflect.StructTag(raw).Get(raw[:end]) == "-" {
+			return true
+		}
+		raw = raw[end+1+len(quoted):]
+	}
+	return false
 }
 
 // matchesAny checks whether name matches any of the candidates using the provided mode.

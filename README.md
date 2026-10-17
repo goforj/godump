@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/github/v/tag/goforj/godump?label=version&sort=semver" alt="Latest tag">
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
 <!-- test-count:embed:start -->
-    <img src="https://img.shields.io/badge/tests-159-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-194-brightgreen" alt="Tests">
 <!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
@@ -235,7 +235,7 @@ If a pointer has already been printed:
 | **Dump** | [Dd](#dd) · [Dump](#dump) · [DumpStr](#dumpstr) · [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) · [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) · [WithExcludeFields](#withexcludefields) · [WithFieldMatchMode](#withfieldmatchmode) · [WithMaxDepth](#withmaxdepth) · [WithMaxItems](#withmaxitems) · [WithMaxStringLen](#withmaxstringlen) · [WithOnlyFields](#withonlyfields) · [WithRedactFields](#withredactfields) · [WithRedactMatchMode](#withredactmatchmode) · [WithRedactSensitive](#withredactsensitive) · [WithSkipStackFrames](#withskipstackframes) · [WithWriter](#withwriter) · [WithoutColor](#withoutcolor) · [WithoutHeader](#withoutheader) · [WithoutTypes](#withouttypes) |
+| **Options** | [WithDisableStringer](#withdisablestringer) · [WithExcludeFields](#withexcludefields) · [WithFieldMatchMode](#withfieldmatchmode) · [WithMaxDepth](#withmaxdepth) · [WithMaxItems](#withmaxitems) · [WithMaxStringLen](#withmaxstringlen) · [WithOnlyFields](#withonlyfields) · [WithRedactFields](#withredactfields) · [WithRedactMatchMode](#withredactmatchmode) · [WithRedactSensitive](#withredactsensitive) · [WithRedactTags](#withredacttags) · [WithSkipStackFrames](#withskipstackframes) · [WithWriter](#withwriter) · [WithoutColor](#withoutcolor) · [WithoutHeader](#withoutheader) · [WithoutTypes](#withouttypes) |
 
 
 ## Builder
@@ -696,6 +696,28 @@ d.Dump(User{Password: "secret", Token: "abc"})
 // #godump.User {
 //   +Password => <redacted> #string
 //   +Token    => <redacted> #string
+// }
+```
+
+### <a id="withredacttags"></a>WithRedactTags
+
+WithRedactTags redacts struct fields whose selected tag values equal "-".
+With no keys, or with "*", it checks all tag keys. Calls accumulate selected keys.
+Matching is case-sensitive and does not treat "-,omitempty" as "-".
+It applies as text, HTML, and diff output traverse nested and embedded structs.
+JSON helpers retain encoding/json behavior. Structs rendered through fmt.Stringer
+are not traversed; use WithDisableStringer(true) to inspect their fields instead.
+
+```go
+type User struct {
+	Name string
+	Credential string `json:"-"`
+}
+d := godump.NewDumper(godump.WithRedactTags("json"), godump.WithoutHeader())
+d.Dump(User{Name: "Alice", Credential: "secret"})
+// #godump.User {
+//   +Name       => "Alice" #string
+//   +Credential => <redacted> #string
 // }
 ```
 
