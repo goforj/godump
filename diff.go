@@ -154,7 +154,7 @@ func (d *Dumper) diffDumps(a, b any) diffDumpPair {
 	leftDump := d.dumpStrNoHeader(a)
 	rightDump := d.dumpStrNoHeader(b)
 
-	if reflect.TypeOf(a) != reflect.TypeOf(b) {
+	if !d.hideTypes && reflect.TypeOf(a) != reflect.TypeOf(b) {
 		leftType := fmt.Sprintf("type: %s", d.typeStringForAny(a))
 		rightType := fmt.Sprintf("type: %s", d.typeStringForAny(b))
 		leftDump = leftType + "\n" + leftDump

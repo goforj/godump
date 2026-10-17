@@ -6,15 +6,16 @@ package main
 import "github.com/goforj/godump"
 
 func main() {
-	// WithoutTypes hides type information when the structure will be dumped.
+	// WithoutTypes omits type annotations while preserving value colors and structure.
+	// It applies to text, HTML, and diff output. JSON output is unchanged.
 
 	// Example: hide type information
-	v := map[string]map[string]int{"a": {"b": 1}}
-	d := godump.NewDumper(godump.WithoutTypes())
-	d.Dump(v)
+	type User struct {
+		Name string
+	}
+	d := godump.NewDumper(godump.WithoutTypes(), godump.WithoutHeader())
+	d.Dump(User{Name: "Alice"})
 	// {
-	//   a => {
-	//     b => 1
-	//   }
+	//   +Name => "Alice"
 	// }
 }

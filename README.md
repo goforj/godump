@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/github/v/tag/goforj/godump?label=version&sort=semver" alt="Latest tag">
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
 <!-- test-count:embed:start -->
-    <img src="https://img.shields.io/badge/tests-130-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-159-brightgreen" alt="Tests">
 <!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
@@ -758,16 +758,17 @@ d.Dump("hello")
 
 ### <a id="withouttypes"></a>WithoutTypes
 
-WithoutTypes hides type information when the structure will be dumped.
+WithoutTypes omits type annotations while preserving value colors and structure.
+It applies to text, HTML, and diff output. JSON output is unchanged.
 
 ```go
-v := map[string]map[string]int{"a": {"b": 1}}
-d := godump.NewDumper(godump.WithoutTypes())
-d.Dump(v)
+type User struct {
+	Name string
+}
+d := godump.NewDumper(godump.WithoutTypes(), godump.WithoutHeader())
+d.Dump(User{Name: "Alice"})
 // {
-//   a => {
-//     b => 1
-//   }
+//   +Name => "Alice"
 // }
 ```
 <!-- api:embed:end -->
