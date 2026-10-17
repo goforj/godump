@@ -138,6 +138,7 @@ type Dumper struct {
 	redactFields       []string
 	fieldMatchMode     FieldMatchMode
 	redactMatchMode    FieldMatchMode
+	hideTypes          bool
 
 	// callerFn is used to get the caller information.
 	// It defaults to [runtime.Caller], it is here to be overridden for testing purposes.
@@ -161,6 +162,27 @@ func newDumpState() *dumpState {
 	return &dumpState{
 		nextRefID: 1,
 		refs:      map[uintptr]int{},
+	}
+}
+
+// WithoutTypes omits type annotations while preserving value colors and structure.
+// It applies to text, HTML, and diff output. JSON output is unchanged.
+// @group Options
+//
+// Example: hide type information
+//
+//	type User struct {
+//		Name string
+//	}
+//	d := godump.NewDumper(godump.WithoutTypes(), godump.WithoutHeader())
+//	d.Dump(User{Name: "Alice"})
+//	// {
+//	//   +Name => "Alice"
+//	// }
+func WithoutTypes() Option {
+	return func(d *Dumper) *Dumper {
+		d.hideTypes = true
+		return d
 	}
 }
 
@@ -816,7 +838,11 @@ func (d *Dumper) formatByteSliceAsHexDump(b []byte, indent int) string {
 	bodyIndent := fieldIndent
 
 	// Header
-	sb.WriteString(fmt.Sprintf("([]uint8) (len=%d cap=%d) {\n", len(b), cap(b)))
+	if d.hideTypes {
+		sb.WriteString(fmt.Sprintf("(len=%d cap=%d) {\n", len(b), cap(b)))
+	} else {
+		sb.WriteString(fmt.Sprintf("([]uint8) (len=%d cap=%d) {\n", len(b), cap(b)))
+	}
 
 	for i := 0; i < len(b); i += lineLen {
 
@@ -910,8 +936,7 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 	}
 
 	if isNil(v) {
-		typeStr := d.getTypeString(v.Type())
-		fmt.Fprintf(w, d.colorize(colorLime, typeStr)+d.colorize(colorGray, "(nil)"))
+		d.printNil(w, v.Type())
 		return
 	}
 
@@ -927,8 +952,11 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 
 	switch v.Kind() {
 	case reflect.Chan:
-		typ := d.colorizer(colorGray, d.getTypeString(v.Type()))
-		fmt.Fprintf(w, "%s(%s)", d.colorize(colorGray, typ), d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
+		if !d.hideTypes {
+			typ := d.colorizer(colorGray, d.getTypeString(v.Type()))
+			fmt.Fprintf(w, "%s", d.colorize(colorGray, typ))
+		}
+		fmt.Fprintf(w, "(%s)", d.colorize(colorCyan, fmt.Sprintf("%#x", v.Pointer())))
 		return
 	}
 
@@ -958,7 +986,8 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 		d.printValue(w, v.Elem(), indent, state)
 	case reflect.Struct:
 		t := v.Type()
-		fmt.Fprintf(w, "%s {", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		d.printContainerType(w, v.Type(), ptrPrefix)
+		fmt.Fprint(w, "{")
 		fmt.Fprintln(w)
 
 		for i := 0; i < t.NumField(); i++ {
@@ -987,9 +1016,14 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 	case reflect.Complex64, reflect.Complex128:
 		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprintf("%v", v.Complex())))
 	case reflect.UnsafePointer:
-		fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
+		if d.hideTypes {
+			fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("%#x", v.Pointer())))
+		} else {
+			fmt.Fprint(w, d.colorize(colorGray, fmt.Sprintf("unsafe.Pointer(%#x)", v.Pointer())))
+		}
 	case reflect.Map:
-		fmt.Fprintf(w, "%s {", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+		d.printContainerType(w, v.Type(), ptrPrefix)
+		fmt.Fprint(w, "{")
 		fmt.Fprintln(w)
 
 		keys := v.MapKeys()
@@ -1006,20 +1040,13 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 		indentPrint(w, indent, "")
 		fmt.Fprint(w, "}")
 	case reflect.Slice, reflect.Array:
-		// []byte handling
-		if v.Type().Elem().Kind() == reflect.Uint8 {
-			if v.CanConvert(reflect.TypeOf([]byte{})) { // Check if it can be converted to []byte
-				if data, ok := v.Convert(reflect.TypeOf([]byte{})).Interface().([]byte); ok {
-					hexDump := d.formatByteSliceAsHexDump(data, indent+1)
-					fmt.Fprint(w, d.colorize(colorLime, hexDump))
-					break
-				}
-			}
+		if d.printByteSlice(w, v, indent) {
+			break
 		}
 
 		// Default rendering for other slices/arrays
-		fmt.Fprintf(w, "%s [", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(v.Type()))))
-		fmt.Fprintln(w)
+		d.printContainerType(w, v.Type(), ptrPrefix)
+		fmt.Fprintln(w, "[")
 
 		for i := 0; i < v.Len(); i++ {
 			if i >= d.maxItems {
@@ -1052,7 +1079,11 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 	case reflect.Float32, reflect.Float64:
 		fmt.Fprint(w, d.colorize(colorCyan, fmt.Sprintf("%f", v.Float())))
 	case reflect.Func:
-		fmt.Fprint(w, d.colorize(colorGray, v.Type().String()))
+		if d.hideTypes {
+			fmt.Fprint(w, d.colorize(colorGray, "<func>"))
+		} else {
+			fmt.Fprint(w, d.colorize(colorGray, v.Type().String()))
+		}
 	}
 
 	// These types should not have post types since they have a body and already
@@ -1069,7 +1100,34 @@ func (d *Dumper) printValue(w io.Writer, v reflect.Value, indent int, state *dum
 		return
 	}
 
-	fmt.Fprint(w, d.colorizer(colorGray, fmt.Sprintf(" #%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+	if !d.hideTypes {
+		fmt.Fprint(w, d.colorizer(colorGray, fmt.Sprintf(" #%s%s", ptrPrefix, d.getTypeString(v.Type()))))
+	}
+}
+
+// printByteSlice retains hex output for byte slices while arrays use indexed output.
+func (d *Dumper) printByteSlice(w io.Writer, v reflect.Value, indent int) bool {
+	if v.Type().Elem().Kind() != reflect.Uint8 || !v.CanConvert(reflect.TypeOf([]byte{})) {
+		return false
+	}
+	data := v.Convert(reflect.TypeOf([]byte{})).Bytes()
+	fmt.Fprint(w, d.colorize(colorLime, d.formatByteSliceAsHexDump(data, indent+1)))
+	return true
+}
+
+// printNil preserves the nil marker when type annotations are hidden.
+func (d *Dumper) printNil(w io.Writer, typ reflect.Type) {
+	if !d.hideTypes {
+		fmt.Fprint(w, d.colorize(colorLime, d.getTypeString(typ)))
+	}
+	fmt.Fprint(w, d.colorize(colorGray, "(nil)"))
+}
+
+// printContainerType keeps annotation suppression consistent for structs, maps, slices, and arrays.
+func (d *Dumper) printContainerType(w io.Writer, typ reflect.Type, ptrPrefix string) {
+	if !d.hideTypes {
+		fmt.Fprintf(w, "%s ", d.colorize(colorGray, fmt.Sprintf("#%s%s", ptrPrefix, d.getTypeString(typ))))
+	}
 }
 
 // asStringer checks if the value implements fmt.Stringer and returns its string representation.
@@ -1082,16 +1140,24 @@ func (d *Dumper) asStringer(v reflect.Value) string {
 	if !val.CanInterface() {
 		val = forceExported(val)
 	}
-	if val.CanInterface() {
-		if s, ok := val.Interface().(fmt.Stringer); ok {
-			rv := reflect.ValueOf(s)
-			if rv.Kind() == reflect.Ptr && rv.IsNil() {
-				return d.colorize(colorGray, val.Type().String()+"(nil)")
-			}
-			return d.colorize(colorLime, s.String()) + d.colorize(colorGray, " #"+d.getTypeString(val.Type()))
-		}
+	if !val.CanInterface() {
+		return ""
 	}
-	return ""
+	s, ok := val.Interface().(fmt.Stringer)
+	if !ok {
+		return ""
+	}
+	rv := reflect.ValueOf(s)
+	if rv.Kind() == reflect.Ptr && rv.IsNil() {
+		if d.hideTypes {
+			return d.colorize(colorGray, "(nil)")
+		}
+		return d.colorize(colorGray, val.Type().String()+"(nil)")
+	}
+	if d.hideTypes {
+		return d.colorize(colorLime, s.String())
+	}
+	return d.colorize(colorLime, s.String()) + d.colorize(colorGray, " #"+d.getTypeString(val.Type()))
 }
 
 // indentPrint prints indented text to the writer.
@@ -1230,7 +1296,7 @@ func (d *Dumper) matchesAny(name string, candidates []string, mode FieldMatchMod
 }
 
 func (d *Dumper) redactedValue(v reflect.Value) string {
-	if !v.IsValid() {
+	if !v.IsValid() || d.hideTypes {
 		return d.colorize(colorRed, "<redacted>")
 	}
 	typeStr := d.getTypeString(v.Type())

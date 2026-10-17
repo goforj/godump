@@ -20,7 +20,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "stable"
+          # Match the pinned linter toolchain; compatibility CI also tests stable Go.
+          go-version: "1.27.0"
 
       - name: Install dependencies
         run: go mod tidy

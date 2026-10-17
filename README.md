@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/github/v/tag/goforj/godump?label=version&sort=semver" alt="Latest tag">
     <a href="https://codecov.io/gh/goforj/godump" ><img src="https://codecov.io/gh/goforj/godump/graph/badge.svg?token=ULUTXL03XC"/></a>
 <!-- test-count:embed:start -->
-    <img src="https://img.shields.io/badge/tests-130-brightgreen" alt="Tests">
+    <img src="https://img.shields.io/badge/tests-159-brightgreen" alt="Tests">
 <!-- test-count:embed:end -->
     <a href="https://github.com/avelino/awesome-go?tab=readme-ov-file#parsersencodersdecoders"><img src="https://awesome.re/mentioned-badge-flat.svg" alt="Mentioned in Awesome Go"></a>
 </p>
@@ -235,7 +235,7 @@ If a pointer has already been printed:
 | **Dump** | [Dd](#dd) · [Dump](#dump) · [DumpStr](#dumpstr) · [Fdump](#fdump) |
 | **HTML** | [DumpHTML](#dumphtml) |
 | **JSON** | [DumpJSON](#dumpjson) · [DumpJSONStr](#dumpjsonstr) |
-| **Options** | [WithDisableStringer](#withdisablestringer) · [WithExcludeFields](#withexcludefields) · [WithFieldMatchMode](#withfieldmatchmode) · [WithMaxDepth](#withmaxdepth) · [WithMaxItems](#withmaxitems) · [WithMaxStringLen](#withmaxstringlen) · [WithOnlyFields](#withonlyfields) · [WithRedactFields](#withredactfields) · [WithRedactMatchMode](#withredactmatchmode) · [WithRedactSensitive](#withredactsensitive) · [WithSkipStackFrames](#withskipstackframes) · [WithWriter](#withwriter) · [WithoutColor](#withoutcolor) · [WithoutHeader](#withoutheader) |
+| **Options** | [WithDisableStringer](#withdisablestringer) · [WithExcludeFields](#withexcludefields) · [WithFieldMatchMode](#withfieldmatchmode) · [WithMaxDepth](#withmaxdepth) · [WithMaxItems](#withmaxitems) · [WithMaxStringLen](#withmaxstringlen) · [WithOnlyFields](#withonlyfields) · [WithRedactFields](#withredactfields) · [WithRedactMatchMode](#withredactmatchmode) · [WithRedactSensitive](#withredactsensitive) · [WithSkipStackFrames](#withskipstackframes) · [WithWriter](#withwriter) · [WithoutColor](#withoutcolor) · [WithoutHeader](#withoutheader) · [WithoutTypes](#withouttypes) |
 
 
 ## Builder
@@ -754,6 +754,22 @@ WithoutHeader disables printing the source location header.
 d := godump.NewDumper(godump.WithoutHeader())
 d.Dump("hello")
 // "hello" #string
+```
+
+### <a id="withouttypes"></a>WithoutTypes
+
+WithoutTypes omits type annotations while preserving value colors and structure.
+It applies to text, HTML, and diff output. JSON output is unchanged.
+
+```go
+type User struct {
+	Name string
+}
+d := godump.NewDumper(godump.WithoutTypes(), godump.WithoutHeader())
+d.Dump(User{Name: "Alice"})
+// {
+//   +Name => "Alice"
+// }
 ```
 <!-- api:embed:end -->
 
