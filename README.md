@@ -798,3 +798,7 @@ d.Dump(User{Name: "Alice"})
 ## Development
 
 Use `make test` for the root module, `make vet` for static checks, and `make modernize-check` to check for supported modernization opportunities. The `examples` directory is a separate Go module and can be tested from that directory when changed.
+
+## Documentation
+
+Read the [godump library documentation](https://goforj.dev/godump) for standalone installation, usage, and API reference.
